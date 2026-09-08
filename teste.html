@@ -1,943 +1,1129 @@
+<!-- CÓDIGO INTEGRADO COM SUPABASE (PAINEL GESTÃO DE FROTA) - ATUALIZADO COM ALTERAÇÃO DE FOTO, EXCLUSÃO E STATUS DE MULTAS -->
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ebric Engenharia - Controle de Estoque (Supabase Ready)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
-                        mono: ['"JetBrains Mono"', 'monospace']
-                    },
-                    colors: {
-                        ebric: {
-                            red: '#DC2626',
-                            orange: '#F97316',
-                            dark: '#F3F4F6',
-                            sidebar: '#FFFFFF',
-                            card: '#FFFFFF',
-                            border: '#D1D5DB',
-                            textDark: '#111827',
-                            textMuted: '#4B5563'
-                        }
-                    },
-                    boxShadow: {
-                        soft: '0 1px 2px rgba(17,24,39,.04), 0 8px 24px -12px rgba(17,24,39,.18)',
-                        lift: '0 2px 4px rgba(17,24,39,.05), 0 18px 40px -20px rgba(220,38,38,.35)'
-                    },
-                    keyframes: {
-                        fadeUp: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'none' } }
-                    },
-                    animation: { fadeUp: 'fadeUp .35s cubic-bezier(.21,.6,.35,1) both' }
-                }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EBRIC ENGENHARIA — Gestão de Frota</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SDK do Supabase via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              orange: '#ff6a00',
+              red: '#dc2626',
+              lightBg: '#f8fafc',
+              cardBg: '#ffffff',
+              sidebarBg: '#ff6a00'
             }
+          }
         }
-    </script>
-    <style>
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeUp .35s cubic-bezier(.21,.6,.35,1) both; }
-        body {
-            background:
-                radial-gradient(900px 480px at 88% -8%, rgba(249,115,22,.10), transparent 60%),
-                radial-gradient(760px 420px at -6% 4%, rgba(220,38,38,.09), transparent 60%),
-                #F4F5F7;
-            background-attachment: fixed;
-        }
-        .card-soft { border-radius: 1.25rem; background: #fff; border: 1px solid rgba(17,24,39,.08); box-shadow: 0 1px 2px rgba(17,24,39,.04), 0 10px 30px -18px rgba(17,24,39,.35); }
-        .stat-card { position: relative; overflow: hidden; transition: transform .25s ease, box-shadow .25s ease; }
-        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 18px 40px -24px rgba(17,24,39,.55); }
-        .stat-card::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: linear-gradient(180deg, #DC2626, #F97316); opacity: .9; }
-        .btn-primary { background-image: linear-gradient(135deg, #DC2626, #F97316); color: #fff; box-shadow: 0 12px 26px -14px rgba(220,38,38,.9); transition: filter .2s ease, transform .2s ease; }
-        .btn-primary:hover { filter: brightness(1.05); transform: translateY(-1px); }
-        .field { background: #F9FAFB; border: 1px solid rgba(17,24,39,.10); border-radius: .85rem; transition: border-color .18s ease, box-shadow .18s ease, background .18s ease; }
-        .field:focus { outline: none; background: #fff; border-color: #F97316; box-shadow: 0 0 0 4px rgba(249,115,22,.14); }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #C7CBD1; border-radius: 999px; }
-        ::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
-        @media print {
-            body * { visibility: hidden; }
-            #print-section, #print-section * { visibility: visible; }
-            #print-section { position: absolute; left: 0; top: 0; width: 100%; }
-        }
-    </style>
+      }
+    }
+  </script>
 </head>
-<body class="bg-ebric-dark text-ebric-textDark min-h-screen flex font-sans selection:bg-red-600 selection:text-white">
-
-    <!-- Tela de Login Admin -->
-    <div id="login-screen" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="bg-white rounded-[1.75rem] max-w-md w-full overflow-hidden shadow-2xl animate-fadeUp">
-            <div class="h-1.5 w-full bg-gradient-to-r from-red-600 via-orange-500 to-amber-400"></div>
-            <div class="p-8 space-y-7">
-                <div class="text-center space-y-3">
-                    <div class="inline-flex p-3.5 rounded-2xl bg-gradient-to-br from-red-600 to-orange-500 text-white shadow-lg shadow-red-600/30">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-600">Ebric Engenharia</p>
-                        <h2 class="text-2xl font-extrabold tracking-tight text-ebric-textDark mt-1">Acesso Restrito</h2>
-                    </div>
-                    <p class="text-xs text-ebric-textMuted leading-relaxed">Insira a senha de administrador para acessar o controle de estoque.</p>
-                </div>
-
-                <form onsubmit="handleLogin(event)" class="space-y-4">
-                    <div>
-                        <label class="block text-[11px] font-bold uppercase tracking-wider text-ebric-textMuted mb-2">Senha de Acesso</label>
-                        <input type="password" id="admin-pass" required placeholder="••••" class="field w-full p-3.5 text-ebric-textDark text-center tracking-[0.4em] text-lg font-mono">
-                    </div>
-                    <button type="submit" class="btn-primary w-full font-bold py-3.5 rounded-xl text-sm">Entrar no Sistema</button>
-                </form>
-                <div class="text-center">
-                    <span class="inline-block px-3 py-1 rounded-full bg-gray-100 text-[10px] text-ebric-textMuted uppercase tracking-widest font-bold">Senha padrão: 1234</span>
-                </div>
-            </div>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased overflow-hidden">
+  
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-orange-600 border-r border-orange-700 flex flex-col justify-between p-4 shrink-0 shadow-lg">
+      <div>
+        <div class="flex items-center gap-3 px-2 mb-8">
+          <div class="w-12 h-12 rounded-xl bg-white flex items-center justify-center p-1.5 shadow-md border border-orange-500">
+            <img src="Logo-ebric.png" alt="EBRIC Logo" class="w-full h-full object-contain" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23ff6a00\'><rect width=\'24\' height=\'24\' rx=\'4\'/></svg>';" />
+          </div>
+          <div>
+            <span class="font-bold text-sm tracking-wide block text-white">EBRIC ENGENHARIA</span>
+            <span class="text-[10px] text-orange-100 font-bold tracking-wider uppercase">Gestão de Frota</span>
+          </div>
         </div>
-    </div>
 
-    <!-- App Container -->
-    <div id="app-container" class="hidden flex-1 flex min-h-screen w-full">
-        <!-- Sidebar -->
-        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-ebric-sidebar border-r border-ebric-border flex flex-col transition-transform duration-300 -translate-x-full md:translate-x-0 shadow-xl md:shadow-none">
-            <div class="p-6 border-b border-ebric-border flex items-center justify-center relative bg-white">
-                <img src="Logo-ebric.png" alt="Ebric Engenharia" class="h-12 w-auto object-contain">
-                <button onclick="toggleSidebar()" class="md:hidden absolute right-4 text-slate-900 font-bold text-xl">&times;</button>
-            </div>
+        <nav class="space-y-1.5">
+          <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all bg-white text-orange-600 shadow-md">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+            Dashboard Frota
+          </button>
+          <button onclick="switchTab('refueling')" id="nav-refueling" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-orange-100 hover:bg-orange-700 hover:text-white">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 22v-20a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v20"/><path d="M15 6h2a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V8a6 6 0 0 0-6-6h-2"/><path d="M7 8h4"/><path d="M7 12h4"/></svg>
+            Abastecimentos
+          </button>
+          <button onclick="switchTab('fines')" id="nav-fines" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-orange-100 hover:bg-orange-700 hover:text-white">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+            Multas e Infrações
+          </button>
+          <button onclick="switchTab('register')" id="nav-register" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-orange-100 hover:bg-orange-700 hover:text-white">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            Cadastrar Veículo
+          </button>
+          <button onclick="switchTab('users')" id="nav-users" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-orange-100 hover:bg-orange-700 hover:text-white">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Gerenciar Logins (Usuários)
+          </button>
+        </nav>
+      </div>
 
-            <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto">
-                <button onclick="switchTab('dashboard')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold bg-red-600 text-white transition-all shadow-lg shadow-red-600/20">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
-                    Dashboard
-                </button>
-                <button onclick="switchTab('cadastro')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-ebric-textMuted hover:bg-gray-100 hover:text-orange-600 transition-all">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    Cadastrar Item
-                </button>
-                <button onclick="switchTab('sinaleira')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-ebric-textMuted hover:bg-gray-100 hover:text-orange-600 transition-all">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                    Painel Sinaleira
-                </button>
-                <button onclick="switchTab('obras')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-ebric-textMuted hover:bg-gray-100 hover:text-orange-600 transition-all">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                    Gestão de Obras
-                </button>
-            </nav>
-
-            <div class="p-4 border-t border-ebric-border flex flex-col gap-3">
-                <div id="sync-status" class="text-[10px] text-center text-emerald-600 font-semibold">● Sincronizado</div>
-                <button onclick="handleLogout()" class="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-gray-100 hover:bg-rose-50 text-ebric-textDark hover:text-rose-600 text-xs font-bold transition-all">
-                    Sair do Sistema
-                </button>
-            </div>
-        </aside>
-
-        <!-- Main Content Wrapper -->
-        <div class="flex-1 flex flex-col md:ml-64 min-w-0">
-            <header class="md:hidden bg-ebric-sidebar border-b border-ebric-border h-16 flex items-center justify-between px-4 sticky top-0 z-40 shadow-sm">
-                <button onclick="toggleSidebar()" class="text-ebric-textDark focus:outline-none">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-                </button>
-                <img src="Logo-ebric.png" alt="Ebric Engenharia" class="h-8 w-auto object-contain">
-                <div class="w-6"></div>
-            </header>
-
-            <main class="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto space-y-6">
-                <!-- DASHBOARD TAB -->
-                <section id="dashboard" class="tab-content active space-y-6">
-                    <div class="flex flex-wrap items-end justify-between gap-3">
-                        <div>
-                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-600">Visão Geral</p>
-                            <h1 class="text-3xl font-extrabold tracking-tight text-ebric-textDark mt-1">Dashboard</h1>
-                            <p class="text-sm text-ebric-textMuted mt-1">Dados persistidos em tempo real na nuvem.</p>
-                        </div>
-                        <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Nuvem ativa
-                        </span>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="card-soft stat-card p-5 pl-6">
-                            <p class="text-[11px] uppercase tracking-wider text-ebric-textMuted font-bold">Total de Ferramentas</p>
-                            <h3 id="stat-tools" class="text-4xl font-extrabold mt-2 tracking-tight text-ebric-textDark">0</h3>
-                        </div>
-                        <div class="card-soft stat-card p-5 pl-6">
-                            <p class="text-[11px] uppercase tracking-wider text-ebric-textMuted font-bold">Produtos Cadastrados</p>
-                            <h3 id="stat-products" class="text-4xl font-extrabold mt-2 tracking-tight text-ebric-textDark">0</h3>
-                        </div>
-                        <div class="card-soft stat-card p-5 pl-6">
-                            <p class="text-[11px] uppercase tracking-wider text-ebric-textMuted font-bold">Em Manutenção</p>
-                            <h3 id="stat-maint" class="text-4xl font-extrabold mt-2 tracking-tight text-red-600">0</h3>
-                        </div>
-                        <div class="card-soft stat-card p-5 pl-6">
-                            <p class="text-[11px] uppercase tracking-wider text-ebric-textMuted font-bold">Alocados em Obras</p>
-                            <h3 id="stat-works" class="text-4xl font-extrabold mt-2 tracking-tight text-orange-600">0</h3>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="card-soft p-6">
-                            <h3 class="text-base font-extrabold text-ebric-textDark">Distribuição Sinaleira</h3>
-                            <p class="text-xs text-ebric-textMuted mb-4">Situação atual do estoque.</p>
-                            <div class="h-64 flex items-center justify-center">
-                                <canvas id="statusChart"></canvas>
-                            </div>
-                        </div>
-                        <div class="card-soft p-6">
-                            <h3 class="text-base font-extrabold text-ebric-textDark">Mais Utilizados</h3>
-                            <p class="text-xs text-ebric-textMuted mb-4">Top 5 itens por movimentação.</p>
-                            <div class="overflow-x-auto rounded-xl border border-gray-100">
-                                <table class="w-full text-left text-sm text-ebric-textMuted">
-                                    <thead class="bg-gray-50 text-ebric-textMuted uppercase text-[11px] tracking-wider">
-                                        <tr>
-                                            <th class="p-3 font-bold">Item</th>
-                                            <th class="p-3 font-bold">Tipo</th>
-                                            <th class="p-3 font-bold">Movimentações</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="top-items-table" class="divide-y divide-gray-100">
-                                        <tr><td colspan="3" class="p-4 text-center text-ebric-textMuted">Carregando dados...</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- CADASTRO TAB -->
-                <section id="cadastro" class="tab-content space-y-6">
-                    <div>
-                        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-600">Entrada</p>
-                        <h1 class="text-3xl font-extrabold tracking-tight text-ebric-textDark mt-1">Cadastro de Insumos</h1>
-                        <p class="text-sm text-ebric-textMuted mt-1">Novos itens ficam disponíveis para todos na hora.</p>
-                    </div>
-
-                    <div class="card-soft p-7 max-w-2xl mx-auto">
-                        <form id="form-item" onsubmit="handleItemSubmit(event)" class="space-y-5">
-                            <div>
-                                <label class="block text-[11px] font-bold uppercase tracking-wider text-ebric-textMuted mb-1.5">Nome do Item</label>
-                                <input type="text" id="item-name" required placeholder="Ex: Serra Circular Profissional" class="field w-full p-3 text-ebric-textDark">
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div>
-                                    <label class="block text-[11px] font-bold uppercase tracking-wider text-ebric-textMuted mb-1.5">Categoria</label>
-                                    <select id="item-type" class="field w-full p-3 text-ebric-textDark">
-                                        <option value="Ferramenta">Ferramenta</option>
-                                        <option value="Produto/Insumo">Produto / Insumo</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold uppercase tracking-wider text-ebric-textMuted mb-1.5">Qtd / Estoque</label>
-                                    <input type="number" id="item-quantity" min="1" value="1" required class="field w-full p-3 text-ebric-textDark">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold uppercase tracking-wider text-ebric-textMuted mb-1.5">Status Inicial</label>
-                                    <select id="item-status" class="field w-full p-3 text-ebric-textDark">
-                                        <option value="Disponível">Disponível (Verde)</option>
-                                        <option value="Em Obra">Em Obra (Laranja)</option>
-                                        <option value="Manutenção">Em Manutenção (Vermelho)</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold uppercase tracking-wider text-ebric-textMuted mb-1.5">Código Único / Patrimônio</label>
-                                <div class="flex gap-2">
-                                    <input type="text" id="item-code" required placeholder="Ex: EBRIC-5041" class="field flex-1 p-3 text-ebric-textDark font-mono">
-                                    <button type="button" onclick="generateRandomCode()" class="bg-gray-100 hover:bg-gray-200 border border-gray-200 text-ebric-textDark px-5 rounded-xl text-sm font-bold transition-all">Gerar</button>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn-primary w-full font-bold py-3.5 rounded-xl">Salvar</button>
-                        </form>
-
-                        <div id="code-output" class="mt-6 pt-6 border-t border-ebric-border hidden flex flex-col items-center space-y-4">
-                            <h3 class="text-sm font-semibold text-ebric-textMuted">Identificadores Gerados</h3>
-                            <div class="flex flex-wrap justify-center gap-6 bg-gray-50 p-4 rounded-xl border border-ebric-border w-full">
-                                <div class="flex flex-col items-center">
-                                    <svg id="barcode-canvas"></svg>
-                                    <span class="text-xs text-ebric-textMuted mt-1">Código de Barras</span>
-                                </div>
-                                <div class="flex flex-col items-center">
-                                    <div id="qrcode-container" class="bg-white p-2 rounded border border-ebric-border"></div>
-                                    <span class="text-xs text-ebric-textMuted mt-1">QR Code</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- SINALEIRA TAB -->
-                <section id="sinaleira" class="tab-content space-y-6">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div>
-                            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-600">Status</p>
-                            <h1 class="text-3xl font-extrabold tracking-tight text-ebric-textDark mt-1">Painel Sinaleira</h1>
-                            <p class="text-sm text-ebric-textMuted mt-1">Imprima etiquetas ou edite cada item pelo card.</p>
-                        </div>
-                        <div class="flex flex-wrap gap-1.5 bg-white p-1.5 rounded-2xl border border-gray-200 shadow-soft">
-                            <button onclick="filterSinaleira('ALL')" class="px-3.5 py-1.5 text-xs rounded-xl bg-gray-900 text-white font-bold transition-all">Todos</button>
-                            <button onclick="filterSinaleira('Disponível')" class="px-3.5 py-1.5 text-xs rounded-xl text-emerald-700 hover:bg-emerald-50 font-bold transition-all">Verde</button>
-                            <button onclick="filterSinaleira('Em Obra')" class="px-3.5 py-1.5 text-xs rounded-xl text-orange-700 hover:bg-orange-50 font-bold transition-all">Laranja</button>
-                            <button onclick="filterSinaleira('Manutenção')" class="px-3.5 py-1.5 text-xs rounded-xl text-rose-700 hover:bg-rose-50 font-bold transition-all">Vermelho</button>
-                        </div>
-                    </div>
-
-                    <div id="sinaleira-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <!-- Preenchido via JS -->
-                    </div>
-                </section>
-
-                <!-- OBRAS TAB -->
-                <section id="obras" class="tab-content space-y-6">
-                    <div>
-                        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-600">Alocação</p>
-                        <h1 class="text-3xl font-extrabold tracking-tight text-ebric-textDark mt-1">Gestão de Obras</h1>
-                        <p class="text-sm text-ebric-textMuted mt-1">Controle quais ferramentas estão em cada obra.</p>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div class="card-soft p-6 h-fit">
-                            <h3 class="text-lg font-extrabold text-ebric-textDark">Criar Nova Obra</h3>
-                            <p class="text-xs text-ebric-textMuted mb-4">Cadastre o canteiro antes de alocar itens.</p>
-                            <form id="form-work" onsubmit="handleWorkSubmit(event)" class="space-y-4">
-                                <div>
-                                    <label class="block text-[11px] font-bold uppercase tracking-wider text-ebric-textMuted mb-1.5">Nome da Obra</label>
-                                    <input type="text" id="work-name" required placeholder="Ex: Torre Comercial Horizon" class="field w-full p-3 text-ebric-textDark">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold uppercase tracking-wider text-ebric-textMuted mb-1.5">Local / Endereço</label>
-                                    <input type="text" id="work-location" required placeholder="Ex: Salvador - BA" class="field w-full p-3 text-ebric-textDark">
-                                </div>
-                                <button type="submit" class="btn-primary w-full font-bold py-3 rounded-xl">Salvar Obra</button>
-                            </form>
-                        </div>
-
-                        <div class="lg:col-span-2 space-y-4">
-                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 card-soft p-5">
-                                <div>
-                                    <h3 class="text-base font-extrabold text-ebric-textDark">Obras Ativas</h3>
-                                    <p class="text-xs text-ebric-textMuted">Expanda para gerenciar alocações por código.</p>
-                                </div>
-                                <button onclick="openScanModal()" class="btn-primary px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7V5a1 1 0 011-1h2m10 0h2a1 1 0 011 1v2M4 17v2a1 1 0 001 1h2m10 0h2a1 1 0 001-1v-2M7 12h10"/></svg>
-                                    Adicionar via Scan / Código
-                                </button>
-                            </div>
-                            <div id="works-container" class="space-y-4">
-                                <!-- Preenchido via JS -->
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </main>
+      <div class="p-3 bg-orange-700/50 rounded-xl border border-orange-500/30 text-xs text-orange-100">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
+          <span class="font-medium text-white">Supabase Conectado</span>
         </div>
-    </div>
+        Sincronização em tempo real
+      </div>
+    </aside>
 
-    <!-- Modal de Edição de Produto -->
-    <div id="edit-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 border border-ebric-border shadow-2xl">
-            <div class="flex justify-between items-center">
-                <h3 class="font-bold text-lg text-ebric-textDark">Editar Insumo/Ferramenta</h3>
-                <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto bg-slate-100">
+      <header class="h-16 border-b border-slate-200 px-8 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
+        <div class="flex items-center gap-4 w-96">
+          <div class="relative w-full">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input
+              type="text"
+              id="searchInput"
+              oninput="filterVehicles()"
+              placeholder="Buscar por modelo ou placa..."
+              class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-4 py-1.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-orange-500 transition-colors"
+            />
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <button 
+            onclick="switchTab('fines')"
+            class="relative p-2 rounded-lg bg-white border border-slate-200 hover:border-slate-300 transition-colors text-slate-600 shadow-sm"
+            title="Atalho de Multas"
+          >
+            <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+            <span id="fines-badge" class="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full text-[10px] font-bold flex items-center justify-center text-white">
+              0
+            </span>
+          </button>
+        </div>
+      </header>
+
+      <div class="p-8 max-w-7xl mx-auto w-full">
+        <!-- TAB: DASHBOARD -->
+        <div id="tab-dashboard" class="space-y-6">
+          <div class="flex justify-between items-center">
+            <div>
+              <h1 class="text-2xl font-bold tracking-tight text-slate-900">Veículos Disponíveis</h1>
+              <p class="text-sm text-slate-500 mt-1">Frota ativa pronta para alocação em canteiro de obras. Clique no card de qualquer veículo para gerenciar, alterar foto ou excluí-lo.</p>
             </div>
-            <form id="form-edit-item" onsubmit="saveEditedItem(event)" class="space-y-3">
-                <input type="hidden" id="edit-id">
+            <div class="bg-white border border-slate-200 px-4 py-2 rounded-xl text-right shadow-sm">
+              <span class="text-[10px] uppercase tracking-wider text-slate-400 block font-bold">Disponíveis</span>
+              <span id="available-count" class="text-lg font-bold text-emerald-600">0</span>
+            </div>
+          </div>
+
+          <!-- Grid Estilo Concessionária -->
+          <div id="vehicles-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Injetado via JS -->
+          </div>
+        </div>
+
+        <!-- TAB: REFUELING -->
+        <div id="tab-refueling" class="hidden space-y-6">
+          <div class="flex justify-between items-center">
+            <div>
+              <h1 class="text-2xl font-bold tracking-tight text-slate-900">Histórico de Abastecimentos</h1>
+              <p class="text-sm text-slate-500 mt-1">Registro mensal de combustível por posto, KM, nota fiscal e responsável.</p>
+            </div>
+            <button onclick="toggleRefuelModal(true)" class="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md transition-colors">
+              + Novo Abastecimento
+            </button>
+          </div>
+
+          <!-- Filtro de Mês -->
+          <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm flex items-center gap-4">
+            <label class="text-xs font-semibold text-slate-600 uppercase">Filtrar por Mês:</label>
+            <select id="filter-month" onchange="renderRefuelTable()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-800 focus:outline-none focus:border-orange-500">
+              <option value="all">Todos os Meses</option>
+              <option value="2026-03" selected>Março / 2026</option>
+              <option value="2026-02">Fevereiro / 2026</option>
+              <option value="2026-01">Janeiro / 2026</option>
+            </select>
+          </div>
+
+          <!-- Tabela de Abastecimentos -->
+          <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase tracking-wider">
+                  <th class="p-4 font-semibold">Data / Mês</th>
+                  <th class="p-4 font-semibold">Veículo</th>
+                  <th class="p-4 font-semibold">Responsável (Login)</th>
+                  <th class="p-4 font-semibold">Posto</th>
+                  <th class="p-4 font-semibold">KM Atual</th>
+                  <th class="p-4 font-semibold">Valor</th>
+                  <th class="p-4 font-semibold text-center">Nota Fiscal</th>
+                </tr>
+              </thead>
+              <tbody id="refuel-table-body" class="divide-y divide-slate-100 text-sm text-slate-700">
+                <!-- Injetado via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB: FINES -->
+        <div id="tab-fines" class="hidden space-y-6">
+          <div class="flex justify-between items-center">
+            <div>
+              <h1 class="text-2xl font-bold tracking-tight text-slate-900">Central de Multas e Infrações</h1>
+              <p class="text-sm text-slate-500 mt-1">Gerencie multas registradas, altere status entre Pendente e Pago, exclua registros e visualize documentos.</p>
+            </div>
+            <button onclick="toggleFineModal(true)" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md transition-colors">
+              + Cadastrar Multa
+            </button>
+          </div>
+
+          <!-- Filtro por Veículo nas Multas -->
+          <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm flex items-center gap-4">
+            <label class="text-xs font-semibold text-slate-600 uppercase">Filtrar por Veículo:</label>
+            <select id="filter-fine-vehicle" onchange="renderFinesList()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-800 focus:outline-none focus:border-orange-500">
+              <option value="all">Todos os Veículos</option>
+            </select>
+          </div>
+
+          <!-- Lista de Multas -->
+          <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <div id="fines-container" class="space-y-4">
+              <!-- Injetado via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: REGISTER -->
+        <div id="tab-register" class="hidden space-y-6">
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight mb-2 text-slate-900">Cadastrar Novo Veículo</h1>
+            <p class="text-sm text-slate-500 mb-6">Adicione um novo ativo à frota corporativa da Ebric.</p>
+            <div class="bg-white border border-slate-200 rounded-xl p-6 max-w-xl shadow-sm">
+              <form onsubmit="handleRegister(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-medium text-ebric-textDark mb-1">Nome</label>
-                    <input type="text" id="edit-name" required class="w-full bg-gray-50 border border-ebric-border rounded-xl p-2.5 text-xs text-ebric-textDark focus:outline-none focus:border-orange-500">
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-xs font-medium text-ebric-textDark mb-1">Qtd / Estoque</label>
-                        <input type="number" id="edit-quantity" min="1" required class="w-full bg-gray-50 border border-ebric-border rounded-xl p-2.5 text-xs text-ebric-textDark focus:outline-none focus:border-orange-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-ebric-textDark mb-1">Status</label>
-                        <select id="edit-status" class="w-full bg-gray-50 border border-ebric-border rounded-xl p-2.5 text-xs text-ebric-textDark focus:outline-none focus:border-orange-500">
-                            <option value="Disponível">Disponível</option>
-                            <option value="Em Obra">Em Obra</option>
-                            <option value="Manutenção">Manutenção</option>
-                        </select>
-                    </div>
+                  <label class="block text-xs font-medium text-slate-600 mb-1">Modelo do Veículo</label>
+                  <input type="text" id="reg-model" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500" placeholder="Ex: Mercedes-Benz Actros" />
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-ebric-textDark mb-1">Código (Patrimônio)</label>
-                    <input type="text" id="edit-code" required class="w-full bg-gray-50 border border-ebric-border rounded-xl p-2.5 text-xs text-ebric-textDark focus:outline-none focus:border-orange-500 font-mono">
-                </div>
-                <div class="flex gap-2 pt-2">
-                    <button type="submit" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all shadow">Salvar Alterações</button>
-                    <button type="button" onclick="closeEditModal()" class="bg-gray-100 hover:bg-gray-200 text-ebric-textDark font-medium px-4 py-2.5 rounded-xl text-xs transition-all">Cancelar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal de Impressão de Etiquetas -->
-    <div id="print-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 border border-ebric-border shadow-2xl text-center">
-            <div class="flex justify-between items-center">
-                <h3 class="font-bold text-base text-ebric-textDark">Etiqueta do Produto</h3>
-                <button onclick="closePrintModal()" class="text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
-            </div>
-            
-            <div id="print-section" class="bg-gray-50 p-4 rounded-xl border border-ebric-border flex flex-col items-center space-y-3">
-                <span id="print-item-name" class="font-bold text-sm text-ebric-textDark"></span>
-                <svg id="print-barcode"></svg>
-                <div id="print-qrcode" class="bg-white p-2 rounded border border-ebric-border flex justify-center"></div>
-                <span id="print-item-code" class="text-xs font-mono text-ebric-textMuted"></span>
-            </div>
-
-            <div class="flex gap-2 pt-2">
-                <button onclick="window.print()" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all shadow">Imprimir</button>
-                <button onclick="closePrintModal()" class="bg-gray-100 hover:bg-gray-200 text-ebric-textDark font-medium px-4 py-2.5 rounded-xl text-xs transition-all">Fechar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de Scanner / Input Rápido -->
-    <div id="scan-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 border border-ebric-border shadow-2xl">
-            <div class="flex justify-between items-center">
-                <h3 class="font-bold text-lg text-ebric-textDark">Adicionar Ferramenta à Obra</h3>
-                <button onclick="closeScanModal()" class="text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
-            </div>
-            <p class="text-xs text-ebric-textMuted">Digite ou escaneie o código do item:</p>
-            
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-xs font-medium text-ebric-textDark mb-1">Obra de Destino</label>
-                    <select id="scan-target-work" class="w-full bg-gray-50 border border-ebric-border rounded-xl p-2.5 text-xs text-ebric-textDark focus:outline-none focus:border-orange-500"></select>
+                  <label class="block text-xs font-medium text-slate-600 mb-1">Placa</label>
+                  <input type="text" id="reg-plate" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500" placeholder="ABC-0000" />
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-ebric-textDark mb-1">Código de Barras / QR Code</label>
-                    <input type="text" id="scan-input-code" placeholder="Ex: EBRIC-5041" class="w-full bg-gray-50 border border-ebric-border rounded-xl p-2.5 text-xs text-ebric-textDark focus:outline-none focus:border-orange-500 font-mono">
+                  <label class="block text-xs font-medium text-slate-600 mb-1">Quilometragem Inicial (KM)</label>
+                  <input type="number" id="reg-mileage" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500" placeholder="0" />
                 </div>
-            </div>
 
-            <div class="flex gap-2 pt-2">
-                <button onclick="processCodeAllocation()" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all shadow">Confirmar Alocação</button>
-                <button onclick="closeScanModal()" class="bg-gray-100 hover:bg-gray-200 text-ebric-textDark font-medium px-4 py-2.5 rounded-xl text-xs transition-all">Cancelar</button>
+                <div>
+                  <label class="block text-xs font-medium text-slate-600 mb-1">Imagem do Veículo (PC, Galeria ou Câmera)</label>
+                  <input type="file" id="reg-image-file" accept="image/*" onchange="handleImagePreview(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-orange-600 file:text-white hover:file:bg-orange-500 cursor-pointer bg-slate-50 border border-slate-200 rounded-lg" />
+                  <input type="hidden" id="reg-image-base64" value="" />
+                  <div id="image-preview-container" class="mt-3 hidden">
+                    <img id="image-preview" src="" alt="Preview" class="w-full h-32 object-cover rounded-lg border border-slate-200" />
+                  </div>
+                </div>
+
+                <button type="submit" id="btn-submit-vehicle" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors shadow-md shadow-orange-600/20 mt-2">
+                  Salvar Veículo
+                </button>
+              </form>
             </div>
+          </div>
         </div>
+
+        <!-- TAB: USERS / GESTÃO DE LOGINS -->
+        <div id="tab-users" class="hidden space-y-6">
+          <div class="flex justify-between items-center">
+            <div>
+              <h1 class="text-2xl font-bold tracking-tight text-slate-900">Gerenciamento de Logins (Usuários)</h1>
+              <p class="text-sm text-slate-500 mt-1">Cadastre e edite os motoristas/operadores. O login é feito por número de telefone.</p>
+            </div>
+            <button onclick="openUserModal()" class="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md transition-colors">
+              + Novo Usuário
+            </button>
+          </div>
+
+          <!-- Tabela de Usuários -->
+          <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase tracking-wider">
+                  <th class="p-4 font-semibold">Nome Completo</th>
+                  <th class="p-4 font-semibold">Telefone (Login)</th>
+                  <th class="p-4 font-semibold">Função / Perfil</th>
+                  <th class="p-4 font-semibold text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body" class="divide-y divide-slate-100 text-sm text-slate-700">
+                <!-- Injetado via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL DE DETALHES DO VEÍCULO (COM ALTERAÇÃO DE FOTO E EXCLUSÃO) -->
+  <div id="vehicle-details-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="relative h-64 bg-slate-900 shrink-0 group">
+        <img id="modal-vehicle-img" src="" alt="Veículo" class="w-full h-full object-cover opacity-90" />
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
+        
+        <!-- Botão para Alterar Foto Diretamente no Card/Modal -->
+        <label class="absolute top-4 left-4 bg-slate-900/70 hover:bg-orange-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer transition-colors backdrop-blur-md flex items-center gap-1.5 border border-white/20 shadow-md">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Alterar Foto
+          <input type="file" id="modal-change-photo-input" accept="image/*" class="hidden" onchange="handleUpdateVehiclePhoto(event)" />
+        </label>
+
+        <button onclick="closeVehicleModal()" class="absolute top-4 right-4 w-9 h-9 bg-slate-900/60 hover:bg-slate-900 text-white rounded-full flex items-center justify-center transition-colors backdrop-blur-md">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+        <div class="absolute bottom-4 left-6 right-6 flex justify-between items-end">
+          <div>
+            <span id="modal-vehicle-status" class="px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase inline-block mb-2"></span>
+            <h2 id="modal-vehicle-model" class="text-2xl font-bold text-white"></h2>
+          </div>
+          <span id="modal-vehicle-plate" class="px-3 py-1.5 rounded-lg font-mono text-sm font-bold bg-white/20 backdrop-blur-md text-white border border-white/20"></span>
+        </div>
+      </div>
+      
+      <div class="p-6 overflow-y-auto space-y-6 flex-1">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center">
+            <span class="text-xs font-medium text-slate-400 block mb-1">Quilometragem</span>
+            <span id="modal-vehicle-mileage" class="text-base font-mono font-bold text-orange-600"></span>
+          </div>
+          <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center">
+            <span class="text-xs font-medium text-slate-400 block mb-1">Combustível</span>
+            <span id="modal-vehicle-fuel" class="text-base font-mono font-bold text-slate-700"></span>
+          </div>
+          <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center">
+            <span class="text-xs font-medium text-slate-400 block mb-1">ID do Sistema</span>
+            <span id="modal-vehicle-id" class="text-xs font-mono font-bold text-slate-500 truncate block"></span>
+          </div>
+          <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center">
+            <span class="text-xs font-medium text-slate-400 block mb-1">Cadastrado em</span>
+            <span id="modal-vehicle-date" class="text-xs font-medium text-slate-600">Recente</span>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">Histórico de Abastecimentos deste Veículo</h3>
+          <div class="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="bg-slate-100 border-b border-slate-200 text-slate-500 font-semibold">
+                  <th class="p-3">Data</th>
+                  <th class="p-3">Posto</th>
+                  <th class="p-3">Responsável</th>
+                  <th class="p-3 text-right">KM</th>
+                  <th class="p-3 text-right">Valor</th>
+                </tr>
+              </thead>
+              <tbody id="modal-vehicle-refuels" class="divide-y divide-slate-200 text-slate-700">
+                <!-- Preenchido dinamicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
+        <button onclick="deleteCurrentVehicle()" class="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-semibold rounded-lg transition-colors border border-red-200 flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          Excluir Veículo
+        </button>
+        <button onclick="closeVehicleModal()" class="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-semibold rounded-lg transition-colors">Fechar</button>
+      </div>
     </div>
+  </div>
 
-    <!-- Script Application Logic Conectado ao Supabase -->
-    <script>
-        const SUPABASE_URL = 'https://xgvyfilzsspoelhlvnnu.supabase.co';
-        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_2g5nKYVGmMv8V_Glpku0OQ_-pEYdxrI';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  <!-- MODAL DE ABASTECIMENTO -->
+  <div id="refuel-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white border border-slate-200 rounded-xl p-6 max-w-md w-full shadow-2xl">
+      <h3 class="text-lg font-bold text-slate-900 mb-4">Registrar Novo Abastecimento</h3>
+      <form onsubmit="handleRefuelSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Selecione o Veículo</label>
+          <select id="ref-vehicle" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500">
+            <!-- Injetado via JS -->
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Quem Abasteceu (Motorista / Operador)</label>
+          <select id="ref-user" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500">
+            <!-- Injetado via JS -->
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Posto de Combustível</label>
+          <select id="ref-station" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500">
+            <option value="" disabled selected>Selecione o posto...</option>
+            <option value="Posto Petrobras Rodovia">Posto Petrobras Rodovia</option>
+            <option value="Auto Posto Ipiranga Sul">Auto Posto Ipiranga Sul</option>
+            <option value="Posto Shell Canteiro Central">Posto Shell Canteiro Central</option>
+            <option value="Auto Posto BR Centro">Auto Posto BR Centro</option>
+            <option value="Posto Ale - Base Norte">Posto Ale - Base Norte</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">KM Atual do Veículo</label>
+          <input type="number" id="ref-mileage" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500" placeholder="Ex: 142500" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Valor Total (R$)</label>
+          <input type="number" step="0.01" id="ref-value" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500" placeholder="Ex: 450.00" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Foto da Nota Fiscal (PC, Galeria ou Câmera)</label>
+          <input type="file" id="ref-receipt-file" accept="image/*" onchange="handleReceiptPreview(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-orange-600 file:text-white hover:file:bg-orange-500 cursor-pointer bg-slate-50 border border-slate-200 rounded-lg" />
+          <input type="hidden" id="ref-receipt-base64" value="" />
+          <div id="receipt-preview-container" class="mt-2 hidden">
+            <img id="receipt-preview" src="" alt="Nota Fiscal" class="w-full h-24 object-cover rounded-lg border border-slate-200" />
+          </div>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="toggleRefuelModal(false)" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-lg text-sm transition-colors">Cancelar</button>
+          <button type="submit" id="btn-submit-refuel" class="w-1/2 bg-orange-600 hover:bg-orange-500 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors shadow-md">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-        let db = {
-            items: [],
-            works: []
+  <!-- MODAL DE CADASTRAR MULTA -->
+  <div id="fine-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white border border-slate-200 rounded-xl p-6 max-w-md w-full shadow-2xl">
+      <h3 class="text-lg font-bold text-slate-900 mb-4">Cadastrar Nova Multa</h3>
+      <form onsubmit="handleFineSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Selecione o Veículo</label>
+          <select id="fine-vehicle" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500">
+            <!-- Injetado via JS -->
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Tipo de Infração</label>
+          <input type="text" id="fine-type" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500" placeholder="Ex: Excesso de Velocidade" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Local da Infração</label>
+          <input type="text" id="fine-location" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500" placeholder="Ex: Rodovia BR-116, km 240" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Data da Infração</label>
+          <input type="date" id="fine-date" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Valor da Multa (R$)</label>
+          <input type="number" step="0.01" id="fine-value" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500" placeholder="Ex: 293.47" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Status Inicial</label>
+          <select id="fine-status" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500">
+            <option value="Pendente" selected>Pendente</option>
+            <option value="Pago">Pago</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Documento / Foto da Multa (PDF ou Imagem)</label>
+          <input type="file" id="fine-doc-file" accept="image/*,application/pdf" onchange="handleFineDocPreview(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-red-600 file:text-white hover:file:bg-red-500 cursor-pointer bg-slate-50 border border-slate-200 rounded-lg" />
+          <input type="hidden" id="fine-doc-base64" value="" />
+          <div id="fine-doc-preview-container" class="mt-2 hidden">
+            <img id="fine-doc-preview" src="" alt="Documento da Multa" class="w-full h-24 object-cover rounded-lg border border-slate-200" />
+          </div>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="toggleFineModal(false)" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-lg text-sm transition-colors">Cancelar</button>
+          <button type="submit" id="btn-submit-fine" class="w-1/2 bg-red-600 hover:bg-red-500 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors shadow-md">Salvar Multa</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DE CRIAR / EDITAR USUÁRIO (LOGIN) -->
+  <div id="user-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white border border-slate-200 rounded-xl p-6 max-w-md w-full shadow-2xl">
+      <h3 id="user-modal-title" class="text-lg font-bold text-slate-900 mb-4">Cadastrar Novo Usuário</h3>
+      <form onsubmit="handleUserSubmit(event)" class="space-y-4">
+        <input type="hidden" id="user-edit-id" value="" />
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Nome Completo (Registro)</label>
+          <input type="text" id="user-name" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500" placeholder="Ex: Carlos Eduardo" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Número de Telefone (Login)</label>
+          <input type="text" id="user-phone" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500" placeholder="(11) 99999-9999" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Função / Perfil</label>
+          <select id="user-role" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500">
+            <option value="Motorista">Motorista</option>
+            <option value="Operador de Máquina">Operador de Máquina</option>
+            <option value="Gestor de Frota">Gestor de Frota</option>
+          </select>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="closeUserModal()" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-lg text-sm transition-colors">Cancelar</button>
+          <button type="submit" id="btn-submit-user" class="w-1/2 bg-orange-600 hover:bg-orange-500 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors shadow-md">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Inicialização do Supabase
+    const SUPABASE_URL = 'https://xgvyfilzsspoelhlvnnu.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_2g5nKYVGmMv8V_Glpku0OQ_-pEYdxrI';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let vehicles = [];
+    let users = [];
+    let refuels = [];
+    let fines = [];
+    let currentVehicleId = null;
+
+    // Carregar dados iniciais do Supabase ao iniciar a página
+    async function loadData() {
+      try {
+        const [vRes, uRes, rRes, fRes] = await Promise.all([
+          supabaseClient.from('vehicles').select('*'),
+          supabaseClient.from('operators').select('*'),
+          supabaseClient.from('refuels').select('*'),
+          supabaseClient.from('fines').select('*')
+        ]);
+
+        if (vRes.data) vehicles = vRes.data;
+        if (uRes.data) users = uRes.data;
+        if (rRes.data) refuels = rRes.data;
+        if (fRes.data) fines = fRes.data;
+
+        renderVehicles(vehicles);
+        updateVehicleSelects();
+        renderFinesList();
+      } catch (err) {
+        console.error('Erro ao carregar dados do Supabase:', err);
+      }
+    }
+
+    function switchTab(tabId) {
+      ['dashboard', 'refueling', 'fines', 'register', 'users'].forEach(t => {
+        const tabEl = document.getElementById(`tab-${t}`);
+        if(tabEl) tabEl.classList.add('hidden');
+        const btn = document.getElementById(`nav-${t}`);
+        if(btn) btn.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-orange-100 hover:bg-orange-700 hover:text-white";
+      });
+      
+      const targetEl = document.getElementById(`tab-${tabId}`);
+      if(targetEl) targetEl.classList.remove('hidden');
+      
+      const activeBtn = document.getElementById(`nav-${tabId}`);
+      if(activeBtn) activeBtn.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all bg-white text-orange-600 shadow-md";
+
+      if(tabId === 'refueling') {
+        renderRefuelTable();
+      } else if(tabId === 'users') {
+        renderUsersTable();
+      } else if(tabId === 'fines') {
+        renderFinesList();
+      }
+    }
+
+    function updateVehicleSelects() {
+      const selects = ['ref-vehicle', 'fine-vehicle', 'filter-fine-vehicle'];
+      selects.forEach(id => {
+        const el = document.getElementById(id);
+        if(!el) return;
+        
+        let optionsHtml = '';
+        if (id === 'filter-fine-vehicle') {
+          optionsHtml = '<option value="all">Todos os Veículos</option>';
+        } else {
+          optionsHtml = '<option value="" disabled selected>Selecione o veículo...</option>';
+        }
+
+        optionsHtml += vehicles.map(v => `<option value="${v.model} (${v.plate})">${v.model} - ${v.plate}</option>`).join('');
+        el.innerHTML = optionsHtml;
+      });
+    }
+
+    function toggleRefuelModal(show) {
+      const modal = document.getElementById('refuel-modal');
+      if (show) {
+        const vSelect = document.getElementById('ref-vehicle');
+        vSelect.innerHTML = vehicles.map(v => `<option value="${v.model} (${v.plate})">${v.model} - ${v.plate}</option>`).join('');
+        
+        const uSelect = document.getElementById('ref-user');
+        uSelect.innerHTML = users.map(u => `<option value="${u.name} (${u.phone})">${u.name} — Tel: ${u.phone}</option>`).join('');
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      } else {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }
+    }
+
+    function toggleFineModal(show) {
+      const modal = document.getElementById('fine-modal');
+      if (show) {
+        updateVehicleSelects();
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      } else {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }
+    }
+
+    function openUserModal(id = null) {
+      const modal = document.getElementById('user-modal');
+      const title = document.getElementById('user-modal-title');
+      const editId = document.getElementById('user-edit-id');
+      
+      if (id !== null) {
+        const user = users.find(u => u.id === id);
+        title.textContent = 'Editar Usuário (Login)';
+        editId.value = id;
+        document.getElementById('user-name').value = user.name;
+        document.getElementById('user-phone').value = user.phone;
+        document.getElementById('user-role').value = user.role;
+      } else {
+        title.textContent = 'Cadastrar Novo Usuário';
+        editId.value = '';
+        document.getElementById('user-name').value = '';
+        document.getElementById('user-phone').value = '';
+        document.getElementById('user-role').value = 'Motorista';
+      }
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeUserModal() {
+      const modal = document.getElementById('user-modal');
+      modal.classList.remove('flex');
+      modal.classList.add('hidden');
+    }
+
+    // ABRIR MODAL DE DETALHES DO VEÍCULO AO CLICAR NO CARD
+    function openVehicleModal(vehicleId) {
+      currentVehicleId = vehicleId;
+      const v = vehicles.find(item => item.id === vehicleId);
+      if (!v) return;
+
+      document.getElementById('modal-vehicle-img').src = v.image_url || v.imageUrl || 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80';
+      document.getElementById('modal-vehicle-model').textContent = v.model;
+      document.getElementById('modal-vehicle-plate').textContent = v.plate;
+      
+      const statusBadge = document.getElementById('modal-vehicle-status');
+      const isAvailable = v.status === 'available';
+      statusBadge.textContent = isAvailable ? 'Disponível' : 'Em Trânsito';
+      statusBadge.className = `px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase inline-block mb-2 ${isAvailable ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'}`;
+
+      document.getElementById('modal-vehicle-mileage').textContent = `${Number(v.mileage || 0).toLocaleString('pt-BR')} km`;
+      document.getElementById('modal-vehicle-fuel').textContent = `${v.fuel_level || v.fuelLevel || 100}%`;
+      document.getElementById('modal-vehicle-id').textContent = v.id;
+      document.getElementById('modal-vehicle-date').textContent = v.created_at ? new Date(v.created_at).toLocaleDateString('pt-BR') : 'Recente';
+
+      // Filtrar abastecimentos correspondentes a este veículo
+      const vehicleRefuels = refuels.filter(r => {
+        const refStr = (r.vehicle_model || r.vehicleModel || '').toLowerCase();
+        return refStr.includes(v.plate.toLowerCase()) || refStr.includes(v.model.toLowerCase());
+      });
+
+      const refuelsTbody = document.getElementById('modal-vehicle-refuels');
+      if (vehicleRefuels.length === 0) {
+        refuelsTbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">Nenhum abastecimento registrado para este veículo.</td></tr>';
+      } else {
+        refuelsTbody.innerHTML = vehicleRefuels.map(r => `
+          <tr class="hover:bg-slate-100 transition-colors">
+            <td class="p-3">${r.date}</td>
+            <td class="p-3">${r.station}</td>
+            <td class="p-3">${r.user_name || r.userName || 'N/A'}</td>
+            <td class="p-3 text-right font-mono">${Number(r.mileage).toLocaleString('pt-BR')} km</td>
+            <td class="p-3 text-right font-mono font-semibold">R$ ${Number(r.value).toFixed(2)}</td>
+          </tr>
+        `).join('');
+      }
+
+      const modal = document.getElementById('vehicle-details-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeVehicleModal() {
+      const modal = document.getElementById('vehicle-details-modal');
+      modal.classList.remove('flex');
+      modal.classList.add('hidden');
+      currentVehicleId = null;
+    }
+
+    // ALTERAR FOTO DO VEÍCULO DIRETAMENTE AO CLICAR NA OPÇÃO DO CARD/MODAL
+    async function handleUpdateVehiclePhoto(event) {
+      const file = event.target.files[0];
+      if (!file || !currentVehicleId) return;
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const base64Image = e.target.result;
+        try {
+          const { error } = await supabaseClient
+            .from('vehicles')
+            .update({ image_url: base64Image })
+            .eq('id', currentVehicleId);
+
+          if (error) throw error;
+
+          // Atualizar estado local
+          const vIndex = vehicles.findIndex(v => v.id === currentVehicleId);
+          if (vIndex !== -1) {
+            vehicles[vIndex].image_url = base64Image;
+          }
+
+          // Atualizar imagem no modal em tempo real
+          document.getElementById('modal-vehicle-img').src = base64Image;
+          // Re-renderizar grid da dashboard
+          renderVehicles(vehicles);
+          alert('Foto do veículo atualizada com sucesso!');
+        } catch (err) {
+          console.error('Erro ao atualizar foto do veículo:', err);
+          alert('Erro ao salvar a nova foto no Supabase.');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // EXCLUIR VEÍCULO DO SUPABASE
+    async function deleteCurrentVehicle() {
+      if (!currentVehicleId) return;
+      if (!confirm('Tem certeza que deseja excluir este veículo da frota? Esta ação não pode ser desfeita.')) return;
+
+      try {
+        const { error } = await supabaseClient.from('vehicles').delete().eq('id', currentVehicleId);
+        if (error) throw error;
+
+        vehicles = vehicles.filter(v => v.id !== currentVehicleId);
+        closeVehicleModal();
+        renderVehicles(vehicles);
+        updateVehicleSelects();
+      } catch (err) {
+        console.error('Erro ao excluir veículo:', err);
+        alert('Erro ao excluir veículo no Supabase.');
+      }
+    }
+
+    // EXCLUIR MULTA DO SUPABASE
+    async function deleteFine(fineId) {
+      if (!confirm('Tem certeza que deseja excluir este registro de multa?')) return;
+
+      try {
+        const { error } = await supabaseClient.from('fines').delete().eq('id', fineId);
+        if (error) throw error;
+
+        fines = fines.filter(f => f.id !== fineId);
+        renderFinesList();
+      } catch (err) {
+        console.error('Erro ao excluir multa:', err);
+        alert('Erro ao excluir multa no Supabase.');
+      }
+    }
+
+    // ALTERAR STATUS DA MULTA (Pendente / Pago)
+    async function toggleFineStatus(fineId) {
+      const fine = fines.find(f => f.id === fineId);
+      if (!fine) return;
+
+      const currentStatus = fine.status || 'Pendente';
+      const newStatus = currentStatus === 'Pendente' ? 'Pago' : 'Pendente';
+
+      try {
+        const { error } = await supabaseClient
+          .from('fines')
+          .update({ status: newStatus })
+          .eq('id', fineId);
+
+        if (error) throw error;
+
+        fine.status = newStatus;
+        renderFinesList();
+      } catch (err) {
+        console.error('Erro ao atualizar status da multa:', err);
+        alert('Erro ao atualizar o status da multa no Supabase.');
+      }
+    }
+
+    async function handleUserSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('user-edit-id').value;
+      const name = document.getElementById('user-name').value;
+      const phone = document.getElementById('user-phone').value;
+      const role = document.getElementById('user-role').value;
+      const btn = document.getElementById('btn-submit-user');
+
+      btn.textContent = 'Salvando...';
+      btn.disabled = true;
+
+      try {
+        if (id === '') {
+          const { data, error } = await supabaseClient.from('operators').insert([{ name, phone, role }]).select();
+          if (error) throw error;
+          if (data) users.push(data[0]);
+        } else {
+          const { error } = await supabaseClient.from('operators').update({ name, phone, role }).eq('id', id);
+          if (error) throw error;
+          const index = users.findIndex(u => u.id === id);
+          if (index !== -1) users[index] = { ...users[index], name, phone, role };
+        }
+
+        closeUserModal();
+        renderUsersTable();
+      } catch (err) {
+        console.error('Erro ao salvar usuário:', err);
+        alert('Erro ao salvar usuário no Supabase.');
+      } finally {
+        btn.textContent = 'Salvar';
+        btn.disabled = false;
+      }
+    }
+
+    function renderUsersTable() {
+      const tbody = document.getElementById('users-table-body');
+      if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-slate-400 text-sm">Nenhum usuário cadastrado.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = users.map(u => `
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="p-4 font-semibold text-slate-900">${u.name}</td>
+          <td class="p-4 font-mono text-orange-600 font-bold">${u.phone}</td>
+          <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">${u.role}</span></td>
+          <td class="p-4 text-center">
+            <button onclick="openUserModal('${u.id}')" class="px-3 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-medium hover:bg-slate-200 transition-colors border border-slate-200">Editar</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function handleImagePreview(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('reg-image-base64').value = e.target.result;
+          const preview = document.getElementById('image-preview');
+          preview.src = e.target.result;
+          document.getElementById('image-preview-container').classList.remove('hidden');
         };
-
-        let chartInstance = null;
-
-        async function loadDataFromSupabase() {
-            try {
-                const statusEl = document.getElementById('sync-status');
-                statusEl.innerText = '● Sincronizando...';
-
-                const { data: itemsData, error: itemsError } = await supabaseClient.from('items').select('*');
-                if (itemsError) throw itemsError;
-
-                const { data: worksData, error: worksError } = await supabaseClient.from('works').select('*');
-                if (worksError) throw worksError;
-
-                const { data: workItemsData, error: wiError } = await supabaseClient.from('work_items').select('*');
-                if (wiError) throw wiError;
-
-                db.items = (itemsData || []).map(i => ({
-                    id: i.id,
-                    name: i.name,
-                    type: i.type,
-                    code: i.code,
-                    status: i.status,
-                    quantity: i.quantity || 1,
-                    usageCount: i.usage_count || 1
-                }));
-
-                db.works = (worksData || []).map(w => {
-                    const allocatedCodes = (workItemsData || [])
-                        .filter(wi => wi.work_id === w.id)
-                        .map(wi => wi.item_code);
-                    return {
-                        id: w.id,
-                        name: w.name,
-                        location: w.location,
-                        allocatedItems: allocatedCodes
-                    };
-                });
-
-                statusEl.innerText = '● Sincronizado';
-                updateDashboard();
-            } catch (err) {
-                console.error('Erro ao carregar dados do Supabase:', err.message);
-                document.getElementById('sync-status').innerText = '● Erro de Sincronização';
-            }
-        }
-
-        function checkAuth() {
-            const isAuth = sessionStorage.getItem('ebric_auth');
-            if(isAuth === 'true') {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
-                loadDataFromSupabase();
-            } else {
-                document.getElementById('login-screen').classList.remove('hidden');
-                document.getElementById('app-container').classList.add('hidden');
-            }
-        }
-
-        function handleLogin(e) {
-            e.preventDefault();
-            const pass = document.getElementById('admin-pass').value;
-            if(pass === '1234') {
-                sessionStorage.setItem('ebric_auth', 'true');
-                checkAuth();
-            } else {
-                alert('Senha incorreta! Utilize 1234.');
-                document.getElementById('admin-pass').value = '';
-            }
-        }
-
-        function handleLogout() {
-            sessionStorage.removeItem('ebric_auth');
-            checkAuth();
-        }
-
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('-translate-x-full');
-        }
-
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('bg-red-600', 'text-white', 'shadow-lg', 'shadow-red-600/20');
-                btn.classList.add('text-ebric-textMuted');
-            });
-            event.target.closest('button').classList.add('bg-red-600', 'text-white', 'shadow-lg', 'shadow-red-600/20');
-            event.target.closest('button').classList.remove('text-ebric-textMuted');
-
-            if(window.innerWidth < 768) {
-                document.getElementById('sidebar').classList.add('-translate-x-full');
-            }
-
-            if(tabId === 'dashboard') updateDashboard();
-            if(tabId === 'sinaleira') renderSinaleira('ALL');
-            if(tabId === 'obras') renderWorks();
-        }
-
-        function updateDashboard() {
-            const totalTools = db.items.filter(i => i.type === 'Ferramenta').length;
-            const totalProducts = db.items.filter(i => i.type !== 'Ferramenta').length;
-            const maintCount = db.items.filter(i => i.status === 'Manutenção').length;
-            const worksCount = db.items.filter(i => i.status === 'Em Obra').length;
-
-            document.getElementById('stat-tools').innerText = totalTools;
-            document.getElementById('stat-products').innerText = totalProducts;
-            document.getElementById('stat-maint').innerText = maintCount;
-            document.getElementById('stat-works').innerText = worksCount;
-
-            const sortedItems = [...db.items].sort((a,b) => b.usageCount - a.usageCount).slice(0, 5);
-            const tbody = document.getElementById('top-items-table');
-            if(sortedItems.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-ebric-textMuted">Nenhum dado registrado.</td></tr>`;
-            } else {
-                tbody.innerHTML = sortedItems.map(i => `
-                    <tr class="border-b border-ebric-border">
-                        <td class="p-3 font-medium text-ebric-textDark">${i.name}</td>
-                        <td class="p-3 text-ebric-textMuted">${i.type}</td>
-                        <td class="p-3 text-red-600 font-bold">${i.usageCount}x</td>
-                    </tr>
-                `).join('');
-            }
-
-            const ctx = document.getElementById('statusChart').getContext('2d');
-            const availCount = db.items.filter(i => i.status === 'Disponível').length;
-            
-            if(chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Disponível', 'Em Obra', 'Manutenção'],
-                    datasets: [{
-                        data: [availCount, worksCount, maintCount],
-                        backgroundColor: ['#10B981', '#F97316', '#EF4444'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { color: '#4B5563' } } }
-                }
-            });
-        }
-
-        function generateRandomCode() {
-            const randomNum = Math.floor(1000 + Math.random() * 9000);
-            document.getElementById('item-code').value = `EBRIC-${randomNum}`;
-        }
-
-        async function handleItemSubmit(e) {
-            e.preventDefault();
-            const newItem = {
-                name: document.getElementById('item-name').value,
-                type: document.getElementById('item-type').value,
-                status: document.getElementById('item-status').value,
-                code: document.getElementById('item-code').value,
-                quantity: parseInt(document.getElementById('item-quantity').value) || 1,
-                usage_count: 1
-            };
-
-            const { error } = await supabaseClient.from('items').insert([newItem]);
-            if (error) {
-                alert('Erro ao salvar no Supabase: ' + error.message);
-                return;
-            }
-
-            await loadDataFromSupabase();
-
-            document.getElementById('code-output').classList.remove('hidden');
-            JsBarcode("#barcode-canvas", newItem.code, { format: "CODE128", width: 2, height: 50, displayValue: true });
-
-            document.getElementById('qrcode-container').innerHTML = "";
-            new QRCode(document.getElementById("qrcode-container"), {
-                text: newItem.code,
-                width: 90,
-                height: 90
-            });
-
-            document.getElementById('form-item').reset();
-        }
-
-        function renderSinaleira(filter) {
-            const grid = document.getElementById('sinaleira-grid');
-            let filtered = db.items;
-            if(filter !== 'ALL') {
-                filtered = db.items.filter(i => i.status === filter);
-            }
-
-            if(filtered.length === 0) {
-                grid.innerHTML = `<div class="col-span-full p-8 text-center text-ebric-textMuted bg-ebric-card rounded-2xl border border-ebric-border">Nenhum item encontrado.</div>`;
-                return;
-            }
-
-            grid.innerHTML = filtered.map(item => {
-                let badgeColor = 'bg-emerald-100 text-emerald-800 border-emerald-200';
-                let dotColor = 'bg-emerald-500 animate-pulse';
-                if(item.status === 'Em Obra') {
-                    badgeColor = 'bg-orange-100 text-orange-800 border-orange-200';
-                    dotColor = 'bg-orange-500';
-                } else if(item.status === 'Manutenção') {
-                    badgeColor = 'bg-rose-100 text-rose-800 border-rose-200';
-                    dotColor = 'bg-rose-500';
-                }
-
-                let currentWorkName = '';
-                if(item.status === 'Em Obra') {
-                    const foundWork = db.works.find(w => w.allocatedItems.includes(item.code));
-                    if(foundWork) {
-                        currentWorkName = `<p class="text-xs font-semibold text-orange-600 mt-1">📍 Obra: ${foundWork.name}</p>`;
-                    }
-                }
-
-                return `
-                    <div class="card-soft stat-card p-5 pl-6 flex flex-col justify-between space-y-3">
-                        <div class="flex justify-between items-start gap-3">
-                            <div>
-                                <span class="text-[11px] text-ebric-textMuted font-mono tracking-tight">${item.code}</span>
-                                <h4 class="font-extrabold text-ebric-textDark text-base leading-snug">${item.name}</h4>
-                                ${currentWorkName}
-                            </div>
-                            <span class="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${badgeColor}">
-                                <span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span>
-                                ${item.status}
-                            </span>
-                        </div>
-                        <div class="text-xs text-ebric-textMuted flex justify-between items-center bg-gray-50 px-3 py-2.5 rounded-xl border border-gray-100">
-                            <span>Tipo: <b class="text-ebric-textDark">${item.type}</b></span>
-                            <span>Qtd: <b class="text-ebric-textDark">${item.quantity}</b></span>
-                        </div>
-                        <div class="flex gap-2 pt-3 border-t border-gray-100">
-                            <button onclick="openPrintModal('${item.code}')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-ebric-textDark py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                                Etiqueta
-                            </button>
-                            <button onclick="openEditModal('${item.id}')" class="flex-1 bg-orange-50 hover:bg-orange-100 text-orange-700 py-2 rounded-xl text-xs font-semibold transition-all">
-                                Editar
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function filterSinaleira(status) {
-            renderSinaleira(status);
-        }
-
-        function openEditModal(itemId) {
-            const item = db.items.find(i => i.id == itemId);
-            if(!item) return;
-            document.getElementById('edit-id').value = item.id;
-            document.getElementById('edit-name').value = item.name;
-            document.getElementById('edit-quantity').value = item.quantity;
-            document.getElementById('edit-status').value = item.status;
-            document.getElementById('edit-code').value = item.code;
-            document.getElementById('edit-modal').classList.remove('hidden');
-        }
-
-        function closeEditModal() {
-            document.getElementById('edit-modal').classList.add('hidden');
-        }
-
-        async function saveEditedItem(e) {
-            e.preventDefault();
-            const id = document.getElementById('edit-id').value;
-            const updated = {
-                name: document.getElementById('edit-name').value,
-                quantity: parseInt(document.getElementById('edit-quantity').value) || 1,
-                status: document.getElementById('edit-status').value,
-                code: document.getElementById('edit-code').value
-            };
-
-            const { error } = await supabaseClient.from('items').update(updated).eq('id', id);
-            if(error) {
-                alert('Erro ao atualizar: ' + error.message);
-                return;
-            }
-
-            closeEditModal();
-            await loadDataFromSupabase();
-            renderSinaleira('ALL');
-        }
-
-        function openPrintModal(code) {
-            const item = db.items.find(i => i.code === code);
-            if(!item) return;
-
-            document.getElementById('print-item-name').innerText = item.name;
-            document.getElementById('print-item-code').innerText = item.code;
-            
-            JsBarcode("#print-barcode", item.code, { format: "CODE128", width: 2, height: 40, displayValue: true });
-
-            const qrContainer = document.getElementById('print-qrcode');
-            qrContainer.innerHTML = "";
-            new QRCode(qrContainer, {
-                text: item.code,
-                width: 80,
-                height: 80
-            });
-
-            document.getElementById('print-modal').classList.remove('hidden');
-        }
-
-        function closePrintModal() {
-            document.getElementById('print-modal').classList.add('hidden');
-        }
-
-        async function handleWorkSubmit(e) {
-            e.preventDefault();
-            const newWork = {
-                name: document.getElementById('work-name').value,
-                location: document.getElementById('work-location').value
-            };
-            const { error } = await supabaseClient.from('works').insert([newWork]);
-            if (error) {
-                alert('Erro ao criar obra: ' + error.message);
-                return;
-            }
-            document.getElementById('form-work').reset();
-            await loadDataFromSupabase();
-            renderWorks();
-        }
-
-        function renderWorks() {
-            const container = document.getElementById('works-container');
-            if(db.works.length === 0) {
-                container.innerHTML = `<div class="p-6 text-center text-ebric-textMuted bg-ebric-card rounded-2xl border border-ebric-border">Nenhuma obra cadastrada.</div>`;
-                return;
-            }
-
-            container.innerHTML = db.works.map(work => {
-                const allocatedList = work.allocatedItems.map(code => {
-                    const item = db.items.find(i => i.code === code);
-                    return item ? `
-                        <div class="flex items-center justify-between bg-gray-50 border border-ebric-border p-2.5 rounded-xl text-xs shadow-sm">
-                            <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-orange-500"></span>
-                                <span class="font-bold text-ebric-textDark">${item.name}</span>
-                                <span class="text-ebric-textMuted font-mono">(${item.code})</span>
-                            </div>
-                            <button onclick="removeItemFromWork('${work.id}', '${item.code}')" class="text-rose-600 hover:text-rose-700 font-bold px-2 py-1">Remover</button>
-                        </div>
-                    ` : '';
-                }).join('');
-
-                const availableItemsOptions = db.items
-                    .filter(i => i.status === 'Disponível')
-                    .map(i => `<option value="${i.code}">${i.name} (${i.code})</option>`).join('');
-
-                return `
-                    <div class="bg-ebric-card border border-ebric-border rounded-2xl overflow-hidden shadow-sm transition-all">
-                        <div onclick="toggleFolder('${work.id}')" class="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 select-none">
-                            <div class="flex items-center gap-3">
-                                <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-                                <div>
-                                    <h4 class="font-bold text-ebric-textDark text-sm">${work.name}</h4>
-                                    <p class="text-xs text-ebric-textMuted">${work.location} • <span class="text-orange-600 font-semibold">${work.allocatedItems.length} itens alocados</span></p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button onclick="event.stopPropagation(); deleteWork('${work.id}')" class="text-xs text-rose-600 hover:underline mr-2">Excluir</button>
-                                <span class="text-xs text-ebric-textMuted font-medium">Abrir Pasta</span>
-                                <svg id="arrow_${work.id}" class="w-4 h-4 text-ebric-textMuted transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                            </div>
-                        </div>
-
-                        <div id="folder_content_${work.id}" class="hidden p-4 border-t border-ebric-border bg-gray-50/50 space-y-3">
-                            <div class="space-y-2">
-                                <p class="text-xs font-semibold text-ebric-textMuted uppercase tracking-wider">Itens na Obra:</p>
-                                <div class="space-y-1.5">
-                                    ${allocatedList || '<p class="text-xs text-ebric-textMuted italic">Nenhum item alocado.</p>'}
-                                </div>
-                            </div>
-                            <div class="pt-3 border-t border-ebric-border flex gap-2">
-                                <select id="select_item_${work.id}" class="flex-1 bg-white border border-ebric-border text-xs text-ebric-textDark rounded-xl p-2.5 focus:outline-none">
-                                    <option value="">Selecione manualmente...</option>
-                                    ${availableItemsOptions}
-                                </select>
-                                <button onclick="allocateItemToWork('${work.id}')" class="bg-orange-600 hover:bg-orange-700 px-4 py-2 text-xs font-bold text-white rounded-xl transition-all shadow">Alocar</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function toggleFolder(workId) {
-            const content = document.getElementById(`folder_content_${workId}`);
-            const arrow = document.getElementById(`arrow_${workId}`);
-            content.classList.toggle('hidden');
-            arrow.classList.toggle('rotate-180');
-        }
-
-        function openScanModal() {
-            const select = document.getElementById('scan-target-work');
-            if(db.works.length === 0) {
-                alert('Cadastre uma obra primeiro.');
-                return;
-            }
-            select.innerHTML = db.works.map(w => `<option value="${w.id}">${w.name} (${w.location})</option>`).join('');
-            document.getElementById('scan-modal').classList.remove('hidden');
-            setTimeout(() => document.getElementById('scan-input-code').focus(), 100);
-        }
-
-        function closeScanModal() {
-            document.getElementById('scan-modal').classList.add('hidden');
-            document.getElementById('scan-input-code').value = '';
-        }
-
-        async function processCodeAllocation() {
-            const workId = document.getElementById('scan-target-work').value;
-            const codeInput = document.getElementById('scan-input-code').value.trim();
-
-            if(!workId || !codeInput) {
-                alert('Selecione a obra e informe o código.');
-                return;
-            }
-
-            const item = db.items.find(i => i.code.toUpperCase() === codeInput.toUpperCase());
-            if(!item) {
-                alert('Item não encontrado: ' + codeInput);
-                return;
-            }
-
-            const { error: wiError } = await supabaseClient.from('work_items').insert([{ work_id: workId, item_code: item.code }]);
-            if (wiError) {
-                alert('Erro ao alocar: ' + wiError.message);
-                return;
-            }
-
-            await supabaseClient.from('items').update({ 
-                status: 'Em Obra', 
-                usage_count: (item.usageCount || 1) + 1 
-            }).eq('code', item.code);
-
-            await loadDataFromSupabase();
-            closeScanModal();
-            renderWorks();
-        }
-
-        async function allocateItemToWork(workId) {
-            const select = document.getElementById(`select_item_${workId}`);
-            const code = select.value;
-            if(!code) return;
-
-            const item = db.items.find(i => i.code === code);
-
-            const { error: wiError } = await supabaseClient.from('work_items').insert([{ work_id: workId, item_code: code }]);
-            if (wiError) {
-                alert('Erro ao alocar: ' + wiError.message);
-                return;
-            }
-
-            await supabaseClient.from('items').update({ 
-                status: 'Em Obra', 
-                usage_count: (item.usageCount || 1) + 1 
-            }).eq('code', code);
-
-            await loadDataFromSupabase();
-            renderWorks();
-        }
-
-        async function removeItemFromWork(workId, code) {
-            const { error: wiError } = await supabaseClient.from('work_items').delete().match({ work_id: workId, item_code: code });
-            if (wiError) {
-                alert('Erro ao remover alocação: ' + wiError.message);
-                return;
-            }
-
-            await supabaseClient.from('items').update({ status: 'Disponível' }).eq('code', code);
-
-            await loadDataFromSupabase();
-            renderWorks();
-        }
-
-        async function deleteWork(workId) {
-            const work = db.works.find(w => w.id === workId);
-            if(work && work.allocatedItems.length > 0) {
-                for(const code of work.allocatedItems) {
-                    await supabaseClient.from('items').update({ status: 'Disponível' }).eq('code', code);
-                }
-            }
-            const { error } = await supabaseClient.from('works').delete().eq('id', workId);
-            if (error) {
-                alert('Erro ao excluir obra: ' + error.message);
-                return;
-            }
-            await loadDataFromSupabase();
-            renderWorks();
-        }
-
-        window.onload = () => {
-            checkAuth();
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function handleReceiptPreview(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('ref-receipt-base64').value = e.target.result;
+          const preview = document.getElementById('receipt-preview');
+          preview.src = e.target.result;
+          document.getElementById('receipt-preview-container').classList.remove('hidden');
         };
-    </script>
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function handleFineDocPreview(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('fine-doc-base64').value = e.target.result;
+          const preview = document.getElementById('fine-doc-preview');
+          if (file.type.includes('image')) {
+            preview.src = e.target.result;
+            document.getElementById('fine-doc-preview-container').classList.remove('hidden');
+          } else {
+            document.getElementById('fine-doc-preview-container').classList.add('hidden');
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function renderVehicles(list) {
+      const grid = document.getElementById('vehicles-grid');
+      const availableCount = document.getElementById('available-count');
+      
+      const available = list.filter(v => v.status === 'available').length;
+      availableCount.textContent = available;
+
+      if (list.length === 0) {
+        grid.innerHTML = '<div class="col-span-full py-12 text-center text-slate-400 text-sm">Nenhum veículo encontrado.</div>';
+        return;
+      }
+
+      grid.innerHTML = list.map(v => `
+        <div onclick="openVehicleModal('${v.id}')" class="bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-orange-500 transition-all group flex flex-col justify-between shadow-sm hover:shadow-lg cursor-pointer transform hover:-translate-y-1">
+          <div class="relative h-48 bg-slate-100 overflow-hidden">
+            <img src="${v.image_url || v.imageUrl || 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80'}" alt="${v.model}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            <div class="absolute top-3 right-3">
+              <span class="px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase backdrop-blur-md ${v.status === 'available' ? 'bg-emerald-500/20 text-emerald-700 border border-emerald-500/30' : 'bg-red-500/20 text-red-700 border border-red-500/30'}">
+                ${v.status === 'available' ? 'Disponível' : 'Em Trânsito'}
+              </span>
+            </div>
+            <div class="absolute inset-0 bg-orange-600/0 group-hover:bg-orange-600/5 transition-colors flex items-center justify-center">
+              <span class="opacity-0 group-hover:opacity-100 bg-white/90 text-orange-600 font-bold text-xs px-3 py-1.5 rounded-lg shadow-md transition-opacity">Gerenciar / Alterar Foto</span>
+            </div>
+          </div>
+          <div class="p-5 flex-1 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start mb-2">
+                <h3 class="font-bold text-base text-slate-900">${v.model}</h3>
+                <span class="text-xs font-mono bg-slate-100 px-2 py-1 rounded text-slate-700 border border-slate-200">${v.plate}</span>
+              </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <span class="text-slate-400 block">KM Atual</span>
+                <span class="font-mono font-bold text-orange-600 text-sm">${Number(v.mileage || 0).toLocaleString('pt-BR')} km</span>
+              </div>
+              <div>
+                <span class="text-slate-400 block">Combustível</span>
+                <span class="font-mono font-bold text-slate-700 text-sm">${v.fuel_level || v.fuelLevel || 100}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderRefuelTable() {
+      const tbody = document.getElementById('refuel-table-body');
+      const selectedMonth = document.getElementById('filter-month').value;
+
+      const filtered = refuels.filter(r => selectedMonth === 'all' || r.month === selectedMonth);
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400 text-sm">Nenhum abastecimento registrado para este período.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(r => `
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="p-4 font-medium text-slate-800">${r.date}</td>
+          <td class="p-4 font-semibold text-slate-900">${r.vehicle_model || r.vehicleModel}</td>
+          <td class="p-4 text-slate-700">
+            <span class="font-medium text-slate-900 block">${r.user_name || r.userName || 'Não informado'}</span>
+            <span class="text-xs text-orange-600 font-mono">${r.user_phone || r.userPhone || ''}</span>
+          </td>
+          <td class="p-4 text-slate-600">${r.station}</td>
+          <td class="p-4 font-mono text-orange-600 font-bold">${Number(r.mileage).toLocaleString('pt-BR')} km</td>
+          <td class="p-4 font-mono font-bold text-slate-900">R$ ${Number(r.value).toFixed(2)}</td>
+          <td class="p-4 text-center">
+            ${r.receipt ? `<a href="${r.receipt}" target="_blank" class="inline-flex items-center justify-center p-1.5 bg-orange-50 text-orange-600 rounded-lg border border-orange-200 hover:bg-orange-100 transition-colors" title="Ver Nota Fiscal"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></a>` : '<span class="text-xs text-slate-400">Sem nota</span>'}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderFinesList() {
+      const container = document.getElementById('fines-container');
+      const selectedVehicle = document.getElementById('filter-fine-vehicle').value;
+      const badge = document.getElementById('fines-badge');
+
+      badge.textContent = fines.length;
+
+      const filtered = fines.filter(f => selectedVehicle === 'all' || (f.vehicle_model || f.vehicleModel) === selectedVehicle);
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="py-8 text-center text-slate-400 text-sm">Nenhuma multa registrada para o filtro selecionado.</div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(f => {
+        const isPaid = (f.status || 'Pendente') === 'Pago';
+        return `
+          <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg border ${isPaid ? 'border-emerald-200 bg-emerald-50/20' : 'border-red-200'}">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs font-bold ${isPaid ? 'text-emerald-700 bg-emerald-100 border-emerald-300' : 'text-red-600 bg-red-50 border-red-200'} px-2 py-0.5 rounded border uppercase">${f.fine_type || f.fineType}</span>
+                <!-- Botão de Alternar Status (Pendente / Pago) -->
+                <button onclick="toggleFineStatus('${f.id}')" class="px-2.5 py-0.5 rounded-full text-xs font-bold transition-colors ${isPaid ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-amber-500 hover:bg-amber-400 text-white'}">
+                  ${isPaid ? 'Status: Pago' : 'Status: Pendente'}
+                </button>
+              </div>
+              <h4 class="font-semibold text-sm mt-1 text-slate-900">${f.vehicle_model || f.vehicleModel}</h4>
+              <p class="text-xs text-slate-500">${f.location} — ${f.date}</p>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="text-right">
+                <span class="text-sm font-bold ${isPaid ? 'text-emerald-600' : 'text-red-600'}">R$ ${Number(f.value).toFixed(2)}</span>
+                <span class="block text-xs ${isPaid ? 'text-emerald-600 font-semibold' : 'text-slate-400'}">${f.status || 'Pendente'}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                ${f.document_url || f.documentUrl ? `<a href="${f.document_url || f.documentUrl}" target="_blank" class="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg border border-red-200 hover:bg-red-100 transition-colors text-xs font-bold inline-flex items-center gap-1.5" title="Ver Documento"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg> Doc</a>` : ''}
+                <!-- Botão de Excluir Multa -->
+                <button onclick="deleteFine('${f.id}')" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-200 transition-colors" title="Excluir Multa">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function handleRefuelSubmit(e) {
+      e.preventDefault();
+      const vehicleModel = document.getElementById('ref-vehicle').value;
+      const userFullStr = document.getElementById('ref-user').value;
+      const station = document.getElementById('ref-station').value;
+      const mileage = Number(document.getElementById('ref-mileage').value);
+      const value = Number(document.getElementById('ref-value').value);
+      const receipt = document.getElementById('ref-receipt-base64').value || 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80';
+      const btn = document.getElementById('btn-submit-refuel');
+      
+      let userName = userFullStr;
+      let userPhone = '';
+      const match = userFullStr.match(/^(.*?)\s*\((.*?)\)$/);
+      if (match) {
+        userName = match[1].trim();
+        userPhone = match[2].trim();
+      }
+
+      const today = new Date();
+      const dateStr = today.toISOString().split('T')[0];
+      const monthStr = dateStr.substring(0, 7);
+
+      const newRecord = {
+        date: dateStr,
+        month: monthStr,
+        vehicle_model: vehicleModel,
+        user_name: userName,
+        user_phone: userPhone,
+        station: station,
+        mileage: mileage,
+        value: value,
+        receipt: receipt
+      };
+
+      btn.textContent = 'Salvando...';
+      btn.disabled = true;
+
+      try {
+        const { data, error } = await supabaseClient.from('refuels').insert([newRecord]).select();
+        if (error) throw error;
+        if (data) refuels.push(data[0]);
+
+        toggleRefuelModal(false);
+        renderRefuelTable();
+        e.target.reset();
+        document.getElementById('receipt-preview-container').classList.add('hidden');
+      } catch (err) {
+        console.error('Erro ao salvar abastecimento:', err);
+        alert('Erro ao registrar abastecimento no Supabase.');
+      } finally {
+        btn.textContent = 'Salvar';
+        btn.disabled = false;
+      }
+    }
+
+    async function handleFineSubmit(e) {
+      e.preventDefault();
+      const vehicleModel = document.getElementById('fine-vehicle').value;
+      const fineType = document.getElementById('fine-type').value;
+      const location = document.getElementById('fine-location').value;
+      const date = document.getElementById('fine-date').value;
+      const value = Number(document.getElementById('fine-value').value);
+      const status = document.getElementById('fine-status').value;
+      const documentUrl = document.getElementById('fine-doc-base64').value || '';
+      const btn = document.getElementById('btn-submit-fine');
+
+      const newFine = {
+        vehicle_model: vehicleModel,
+        fine_type: fineType,
+        location: location,
+        date: date,
+        value: value,
+        status: status,
+        document_url: documentUrl
+      };
+
+      btn.textContent = 'Salvando...';
+      btn.disabled = true;
+
+      try {
+        const { data, error } = await supabaseClient.from('fines').insert([newFine]).select();
+        if (error) throw error;
+        if (data) fines.push(data[0]);
+
+        toggleFineModal(false);
+        renderFinesList();
+        e.target.reset();
+        document.getElementById('fine-doc-preview-container').classList.add('hidden');
+      } catch (err) {
+        console.error('Erro ao salvar multa:', err);
+        alert('Erro ao cadastrar multa no Supabase. Verifique se a coluna "status" existe na tabela "fines".');
+      } finally {
+        btn.textContent = 'Salvar Multa';
+        btn.disabled = false;
+      }
+    }
+
+    function filterVehicles() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = vehicles.filter(v => v.model.toLowerCase().includes(query) || v.plate.toLowerCase().includes(query));
+      renderVehicles(filtered);
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      const model = document.getElementById('reg-model').value;
+      const plate = document.getElementById('reg-plate').value;
+      const mileage = Number(document.getElementById('reg-mileage').value);
+      const imageUrl = document.getElementById('reg-image-base64').value || 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80';
+      const btn = document.getElementById('btn-submit-vehicle');
+
+      const newVehicle = {
+        model,
+        plate: plate.toUpperCase(),
+        status: 'available',
+        mileage,
+        fuel_level: 100,
+        image_url: imageUrl
+      };
+
+      btn.textContent = 'Salvando no Supabase...';
+      btn.disabled = true;
+
+      try {
+        const { data, error } = await supabaseClient.from('vehicles').insert([newVehicle]).select();
+        if (error) throw error;
+        if (data) vehicles.push(data[0]);
+
+        e.target.reset();
+        document.getElementById('image-preview-container').classList.add('hidden');
+        switchTab('dashboard');
+        renderVehicles(vehicles);
+        updateVehicleSelects();
+      } catch (err) {
+        console.error('Erro ao cadastrar veículo:', err);
+        alert('Erro ao cadastrar veículo. Verifique se a placa já existe.');
+      } finally {
+        btn.textContent = 'Salvar Veículo';
+        btn.disabled = false;
+      }
+    }
+
+    // Inicialização ao carregar a página
+    window.onload = loadData;
+  </script>
 </body>
 </html>
