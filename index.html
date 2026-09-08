@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EBRIC ENGENHARIA — Seleção de Módulos</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --bg-soft: #ffffff;
+      --text: #0c1018;
+      --muted: #5b6478;
+      --border: rgba(12, 16, 24, 0.1);
+      --neon-orange: #ff7a18;
+      --neon-orange-glow: rgba(255, 122, 24, 0.9);
+      --red: #dc2626;
+      --blue: #0284c7;
+      --green: #059669;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(1200px 800px at 50% -10%, #ffffff 0%, var(--bg) 60%);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+
+    .container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* ===================== TOPBAR / NAVBAR ===================== */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(14px);
+      background: rgba(255, 255, 255, 0.82);
+      border-bottom: 1px solid var(--border);
+    }
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      height: 70px;
+    }
+    .brand { display: flex; align-items: center; gap: 0.85rem; }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 46px; height: 46px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--neon-orange), #b33a00);
+      color: #fff;
+      font-weight: 800;
+      font-size: 1.15rem;
+      letter-spacing: 0.5px;
+      box-shadow: 0 0 18px rgba(255, 122, 24, 0.45);
+    }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.1; }
+    .brand-name { font-weight: 700; font-size: 1.05rem; letter-spacing: 0.3px; }
+    .brand-sub { display: flex; align-items: center; gap: 0.5rem; font-size: 0.72rem; color: var(--muted); }
+    .brand-version {
+      font-size: 0.62rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(12, 16, 24, 0.05);
+      border: 1px solid var(--border);
+    }
+    .brand-tag { color: var(--neon-orange); font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase; font-size: 0.66rem; }
+
+    .topbar-right { display: flex; align-items: center; gap: 1.25rem; }
+    .nav-link {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      font-size: 0.86rem; color: var(--muted);
+      padding: 0.5rem 0.9rem; border-radius: 9px;
+      border: 1px solid var(--border);
+      transition: all 0.25s ease;
+    }
+    .nav-link:hover { color: var(--text); border-color: var(--neon-orange); box-shadow: 0 0 14px rgba(255, 122, 24, 0.35); }
+    .nav-link svg { width: 16px; height: 16px; }
+    .session {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-size: 0.8rem; color: var(--muted);
+      padding: 0.45rem 0.85rem; border-radius: 9px;
+      background: rgba(12, 16, 24, 0.03);
+      border: 1px solid var(--border);
+    }
+    .session strong { color: var(--text); font-weight: 600; }
+    .pulse-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 10px var(--green);
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+    .sys-badge {
+      font-size: 0.7rem; letter-spacing: 0.6px; text-transform: uppercase;
+      color: var(--muted); border-left: 1px solid var(--border); padding-left: 1.25rem;
+    }
+
+    /* ===================== MAIN ===================== */
+    main { padding: 3.5rem 0 5rem; }
+    
+    .hero-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2.5rem;
+      align-items: center;
+      margin-bottom: 3.5rem;
+    }
+
+    .section-head { text-align: left; }
+    .section-eyebrow {
+      display: inline-block; font-size: 0.72rem; letter-spacing: 0.6px;
+      text-transform: uppercase; color: var(--neon-orange); font-weight: 700;
+      padding: 0.3rem 0.9rem; border-radius: 999px;
+      border: 1px solid rgba(255, 122, 24, 0.3);
+      background: rgba(255, 122, 24, 0.06);
+      margin-bottom: 1rem;
+    }
+    .section-title { font-size: clamp(1.8rem, 3.2vw, 2.4rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+    .section-subtitle { color: var(--neon-orange); font-weight: 600; margin-top: 0.4rem; font-size: 1.05rem; }
+    .section-desc { color: var(--muted); margin-top: 1rem; font-size: 0.95rem; line-height: 1.6; }
+
+    /* ====== CARD BANCO DE DADOS (EBRIC CLAUDE) — AUMENTADO ====== */
+    .db-card {
+      position: relative;
+      width: 100%;
+      border-radius: 18px;
+      padding: 2.25rem;
+      background: linear-gradient(135deg, #ff8c2a 0%, #ff6a00 100%);
+      color: #fff;
+      box-shadow: 0 12px 35px rgba(255, 106, 0, 0.35);
+      overflow: hidden;
+    }
+    
+    .db-content-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1.75rem;
+      align-items: center;
+    }
+
+    .db-head { display: flex; flex-direction: column; align-items: flex-start; gap: 0.3rem; margin-bottom: 0.75rem; }
+    .db-label { 
+      font-size: 0.68rem; letter-spacing: 0.8px; text-transform: uppercase; 
+      color: rgba(255, 255, 255, 0.85); font-weight: 700;
+      border: 1px solid rgba(255, 255, 255, 0.4); padding: 2px 8px; border-radius: 6px;
+    }
+    .db-title {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-size: 1.5rem; font-weight: 800; color: #fff;
+      margin-top: 0.2rem;
+    }
+    .db-title svg { width: 24px; height: 24px; }
+    
+    .db-logo-wrap {
+      background: transparent; border-radius: 14px; padding: 0.5rem;
+      display: grid; place-items: center;
+      width: 140px; height: 140px; min-width: 140px;
+      border: none;
+      box-shadow: none;
+      transition: transform 0.3s ease;
+    }
+    .db-logo-wrap:hover { transform: scale(1.03); }
+    .db-logo-wrap img { max-height: 115px; width: auto; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.25)); }
+
+    .db-desc { color: rgba(255, 255, 255, 0.92); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.5rem; }
+    
+    .db-action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .db-btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-weight: 700; font-size: 0.88rem; color: #fff;
+      background: transparent;
+      transition: opacity 0.2s ease;
+    }
+    .db-btn:hover { opacity: 0.85; }
+    
+    .db-icon-action-btn {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: #fff; color: #ff6a00;
+      display: grid; place-items: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: transform 0.2s;
+    }
+    .db-icon-action-btn:hover { transform: scale(1.05); }
+    .db-icon-action-btn svg { width: 18px; height: 18px; }
+
+    /* ===================== CARDS DOS MÓDULOS ===================== */
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+    .module-card {
+      position: relative;
+      display: flex; flex-direction: column; justify-content: space-between;
+      min-height: 320px;
+      padding: 1.6rem;
+      border-radius: 14px;
+      color: #fff;
+      border: 1px solid transparent;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(255, 253, 253, 0.966);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      overflow: hidden;
+    }
+    .module-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 15px 35px rgb(255, 254, 254);
+    }
+    .mod-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .mod-code { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px; opacity: 0.85; }
+    .mod-tag {
+      font-size: 0.66rem; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase;
+      padding: 3px 10px; border-radius: 999px;
+      background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+    }
+    .mod-icon {
+      display: grid; place-items: center;
+      width: 48px; height: 48px; border-radius: 10px;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.2);
+      margin: 1rem 0;
+    }
+    .mod-icon svg { width: 24px; height: 24px; }
+    .mod-title { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.01em; }
+    .mod-sub { font-size: 0.85rem; opacity: 0.9; line-height: 1.5; margin-top: 0.35rem; }
+    .mod-foot {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2);
+      font-size: 0.85rem; font-weight: 600;
+    }
+    .mod-enter { display: inline-flex; align-items: center; gap: 0.4rem; }
+    .mod-online { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.68rem; letter-spacing: 0.5px; opacity: 0.9; }
+    .mod-online .dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 6px #fff; animation: pulse 1.8s infinite; }
+
+    /* ===================== FOOTER ===================== */
+    footer {
+      border-top: 1px solid var(--border);
+      background: rgba(255,255,255,0.6);
+      padding: 2rem 0;
+    }
+    .footer-inner { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; text-align: center; }
+    .footer-copy { color: var(--muted); font-size: 0.84rem; }
+    .footer-links { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; justify-content: center; font-size: 0.84rem; }
+    .footer-links a { color: var(--neon-orange); font-weight: 600; transition: text-shadow 0.2s; }
+    .footer-links a:hover { text-shadow: 0 0 12px var(--neon-orange-glow); }
+    .footer-sep { color: var(--muted); }
+    .footer-links .muted-link { color: var(--muted); }
+    .footer-links .muted-link:hover { color: var(--text); text-shadow: none; }
+
+    @media (max-width: 960px) {
+      .hero-layout { grid-template-columns: 1fr; gap: 2rem; }
+      .modules-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .topbar-right { gap: 0.6rem; }
+      .session, .sys-badge { display: none; }
+      .nav-link span { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOPBAR / NAVBAR -->
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <div class="brand-mark">EB</div>
+        <div class="brand-text">
+          <span class="brand-name">EBRIC ENGENHARIA</span>
+          <span class="brand-sub">
+            <span class="brand-version">v2.4</span>
+            <span class="brand-tag">Ecossistema Central de Operações</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <a class="nav-link" id="linkMs7Tech" href="#" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span>Nosso Site</span>
+        </a>
+
+        <span class="session">
+          <span class="pulse-dot"></span>
+          Sessão: <strong>admin@ebric.com.br</strong>
+        </span>
+
+        <span class="sys-badge">Sistemas Operacionais</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main>
+    <div class="container">
+
+      <!-- LAYOUT DE 2 COLUNAS -->
+      <div class="hero-layout">
+        
+        <div class="section-head">
+          <span class="section-eyebrow">MÓDULOS CORPORATIVOS</span>
+          <h1 class="section-title">Selecione o ambiente de trabalho</h1>
+          <p class="section-desc">
+            Acesse as ferramentas específicas da sua área com credenciais unificadas de segurança e auditoria em tempo real.
+          </p>
+        </div>
+
+        <!-- CARD BANCO DE DADOS (EBRIC CLAUDE) -->
+        <section class="db-card" id="btnClaudeContainer">
+          <div class="db-content-grid">
+            <div>
+              <div class="db-head">
+                <span class="db-label">BASE DE DADOS</span>
+                <span class="db-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
+                  EBRIC CLAUDE
+                </span>
+              </div>
+              <p class="db-desc">
+                Acesse ao seu banco de dados unificado da Ebric com permissões de leitura, escrita e consulta em tempo real.
+              </p>
+            </div>
+
+            <!-- CONTAINER DA LOGO SEM O FUNDO PRETO -->
+            <div class="db-logo-wrap">
+              <img src="Título.png" alt="EBRIC CLAUDE" onerror="this.style.display='none'; this.parentElement.textContent='EBRIC'; this.parentElement.style.color='#fff'; this.parentElement.style.fontWeight='800'; this.parentElement.style.fontSize='1.4rem';" />
+            </div>
+          </div>
+
+          <div class="db-action-row">
+            <button class="db-btn" id="btnClaude">
+              Acessar Banco de Dados
+            </button>
+            <div class="db-icon-action-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- CARDS DOS MÓDULOS -->
+      <div class="modules-grid" id="modulesGrid"></div>
+
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container footer-inner">
+      <p class="footer-copy" id="footerCopy">
+        © <span id="year"></span> EBRIC ENGENHARIA S.A. Todos os direitos reservados.
+      </p>
+      <div class="footer-links">
+        <a href="https://ms7tech.github.io/SITE/" target="_blank" rel="noopener noreferrer">Desenvolvido por MS7TECH</a>
+        <span class="footer-sep">•</span>
+        <a class="muted-link" href="https://www.ebricengenharia.com.br" target="_blank" rel="noopener noreferrer">www.ebricengenharia.com.br</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    var linkMs7Tech = "https://ms7tech.github.io/SITE/?utm_source=ig&utm_medium=social&utm_content=link_in_bio";
+    document.getElementById("linkMs7Tech").href = linkMs7Tech;
+
+    function handleOpenClaude(e) {
+      if (e) e.stopPropagation();
+      var caminhoHtml = encodeURI("/EBRIC CLAUDE/ebric-claude.html");
+      window.open(caminhoHtml, "_blank", "noopener,noreferrer");
+    }
+    document.getElementById("btnClaude").addEventListener("click", handleOpenClaude);
+    document.getElementById("btnClaudeContainer").addEventListener("click", handleOpenClaude);
+
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    var ICONS = {
+      Package: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>',
+      Truck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>',
+      CircleDollarSign: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M14.5 8a2.5 2.5 0 0 0-2.5-2H10a2.5 2.5 0 0 0 0 5h4a2.5 2.5 0 0 1 0 5h-2.5A2.5 2.5 0 0 1 9 16"/></svg>'
+    };
+
+    var modulos = [
+      {
+        id: "almoxarifado",
+        codigo: "SYS-01",
+        titulo: "Almoxarifado & Insumos",
+        subtitulo: "Controle de estoque, entrada/saída de ferramentas e rastreabilidade de insumos em obra.",
+        rota: "teste.html",
+        icon: "Package",
+        tag: "Operacional",
+        corFundo: "#dc2626"
+      },
+      {
+        id: "frota",
+        codigo: "SYS-02",
+        titulo: "Gestão de Frota",
+        subtitulo: "Telemetria, agendamento de manutenções, controle de combustível e custos operacionais.",
+        rota: "controledefrota.html",
+        icon: "Truck",
+        tag: "Logística",
+        corFundo: "#0284c7"
+      },
+      {
+        id: "financeiro",
+        codigo: "SYS-03",
+        titulo: "Controladoria & Finanças",
+        subtitulo: "Fluxo de caixa consolidado, gestão de contratos de empreiteiros e medições de obra.",
+        rota: "/financeiro",
+        icon: "CircleDollarSign",
+        tag: "Gestão",
+        corFundo: "#059669"
+      }
+    ];
+
+    var grid = document.getElementById("modulesGrid");
+    modulos.forEach(function (modulo) {
+      var card = document.createElement("div");
+      card.className = "module-card";
+      card.style.backgroundColor = modulo.corFundo;
+      card.addEventListener("click", function () {
+        window.location.href = modulo.rota;
+      });
+
+      card.innerHTML =
+        '<div class="mod-top">' +
+          '<span class="mod-code">' + modulo.codigo + '</span>' +
+          '<span class="mod-tag">' + modulo.tag + '</span>' +
+        '</div>' +
+        '<div class="mod-icon">' + ICONS[modulo.icon] + '</div>' +
+        '<div>' +
+          '<h3 class="mod-title">' + modulo.titulo + '</h3>' +
+          '<p class="mod-sub">' + modulo.subtitulo + '<\/p>' +
+        '</div>' +
+        '<div class="mod-foot">' +
+          '<span class="mod-enter">' +
+            'Entrar na plataforma' +
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/><\/svg>' +
+          '</span>' +
+          '<span class="mod-online"><span class="dot"></span>ONLINE</span>' +
+        '</div>';
+
+      grid.appendChild(card);
+    });
+  </script>
+</body>
+</html>
