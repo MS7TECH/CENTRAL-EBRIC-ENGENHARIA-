@@ -1,4 +1,4 @@
-<!-- CÓDIGO INTEGRADO COM SUPABASE (PAINEL GESTÃO DE FROTA) - ATUALIZADO -->
+<!-- CÓDIGO INTEGRADO COM SUPABASE (PAINEL GESTÃO DE FROTA) - ATUALIZADO COM ALTERAÇÃO DE FOTO, EXCLUSÃO E STATUS DE MULTAS -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -110,7 +110,7 @@
           <div class="flex justify-between items-center">
             <div>
               <h1 class="text-2xl font-bold tracking-tight text-slate-900">Veículos Disponíveis</h1>
-              <p class="text-sm text-slate-500 mt-1">Frota ativa pronta para alocação em canteiro de obras. Clique no card de qualquer veículo para ver detalhes ou excluí-lo.</p>
+              <p class="text-sm text-slate-500 mt-1">Frota ativa pronta para alocação em canteiro de obras. Clique no card de qualquer veículo para gerenciar, alterar foto ou excluí-lo.</p>
             </div>
             <div class="bg-white border border-slate-200 px-4 py-2 rounded-xl text-right shadow-sm">
               <span class="text-[10px] uppercase tracking-wider text-slate-400 block font-bold">Disponíveis</span>
@@ -173,7 +173,7 @@
           <div class="flex justify-between items-center">
             <div>
               <h1 class="text-2xl font-bold tracking-tight text-slate-900">Central de Multas e Infrações</h1>
-              <p class="text-sm text-slate-500 mt-1">Gerencie multas registradas, visualize os documentos anexados e filtre por veículo específico.</p>
+              <p class="text-sm text-slate-500 mt-1">Gerencie multas registradas, altere status entre Pendente e Pago, exclua registros e visualize documentos.</p>
             </div>
             <button onclick="toggleFineModal(true)" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md transition-colors">
               + Cadastrar Multa
@@ -267,12 +267,20 @@
     </main>
   </div>
 
-  <!-- MODAL DE DETALHES DO VEÍCULO (COM OPÇÃO DE EXCLUIR) -->
+  <!-- MODAL DE DETALHES DO VEÍCULO (COM ALTERAÇÃO DE FOTO E EXCLUSÃO) -->
   <div id="vehicle-details-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
     <div class="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-      <div class="relative h-64 bg-slate-900 shrink-0">
+      <div class="relative h-64 bg-slate-900 shrink-0 group">
         <img id="modal-vehicle-img" src="" alt="Veículo" class="w-full h-full object-cover opacity-90" />
         <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
+        
+        <!-- Botão para Alterar Foto Diretamente no Card/Modal -->
+        <label class="absolute top-4 left-4 bg-slate-900/70 hover:bg-orange-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer transition-colors backdrop-blur-md flex items-center gap-1.5 border border-white/20 shadow-md">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Alterar Foto
+          <input type="file" id="modal-change-photo-input" accept="image/*" class="hidden" onchange="handleUpdateVehiclePhoto(event)" />
+        </label>
+
         <button onclick="closeVehicleModal()" class="absolute top-4 right-4 w-9 h-9 bg-slate-900/60 hover:bg-slate-900 text-white rounded-full flex items-center justify-center transition-colors backdrop-blur-md">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
@@ -388,7 +396,7 @@
     </div>
   </div>
 
-  <!-- MODAL DE CADASTRAR MULTA (ATUALIZADO COM ANEXO) -->
+  <!-- MODAL DE CADASTRAR MULTA -->
   <div id="fine-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
     <div class="bg-white border border-slate-200 rounded-xl p-6 max-w-md w-full shadow-2xl">
       <h3 class="text-lg font-bold text-slate-900 mb-4">Cadastrar Nova Multa</h3>
@@ -414,6 +422,13 @@
         <div>
           <label class="block text-xs font-medium text-slate-600 mb-1">Valor da Multa (R$)</label>
           <input type="number" step="0.01" id="fine-value" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500" placeholder="Ex: 293.47" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Status Inicial</label>
+          <select id="fine-status" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500">
+            <option value="Pendente" selected>Pendente</option>
+            <option value="Pago">Pago</option>
+          </select>
         </div>
         <div>
           <label class="block text-xs font-medium text-slate-600 mb-1">Documento / Foto da Multa (PDF ou Imagem)</label>
@@ -649,6 +664,41 @@
       currentVehicleId = null;
     }
 
+    // ALTERAR FOTO DO VEÍCULO DIRETAMENTE AO CLICAR NA OPÇÃO DO CARD/MODAL
+    async function handleUpdateVehiclePhoto(event) {
+      const file = event.target.files[0];
+      if (!file || !currentVehicleId) return;
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const base64Image = e.target.result;
+        try {
+          const { error } = await supabaseClient
+            .from('vehicles')
+            .update({ image_url: base64Image })
+            .eq('id', currentVehicleId);
+
+          if (error) throw error;
+
+          // Atualizar estado local
+          const vIndex = vehicles.findIndex(v => v.id === currentVehicleId);
+          if (vIndex !== -1) {
+            vehicles[vIndex].image_url = base64Image;
+          }
+
+          // Atualizar imagem no modal em tempo real
+          document.getElementById('modal-vehicle-img').src = base64Image;
+          // Re-renderizar grid da dashboard
+          renderVehicles(vehicles);
+          alert('Foto do veículo atualizada com sucesso!');
+        } catch (err) {
+          console.error('Erro ao atualizar foto do veículo:', err);
+          alert('Erro ao salvar a nova foto no Supabase.');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
     // EXCLUIR VEÍCULO DO SUPABASE
     async function deleteCurrentVehicle() {
       if (!currentVehicleId) return;
@@ -665,6 +715,46 @@
       } catch (err) {
         console.error('Erro ao excluir veículo:', err);
         alert('Erro ao excluir veículo no Supabase.');
+      }
+    }
+
+    // EXCLUIR MULTA DO SUPABASE
+    async function deleteFine(fineId) {
+      if (!confirm('Tem certeza que deseja excluir este registro de multa?')) return;
+
+      try {
+        const { error } = await supabaseClient.from('fines').delete().eq('id', fineId);
+        if (error) throw error;
+
+        fines = fines.filter(f => f.id !== fineId);
+        renderFinesList();
+      } catch (err) {
+        console.error('Erro ao excluir multa:', err);
+        alert('Erro ao excluir multa no Supabase.');
+      }
+    }
+
+    // ALTERAR STATUS DA MULTA (Pendente / Pago)
+    async function toggleFineStatus(fineId) {
+      const fine = fines.find(f => f.id === fineId);
+      if (!fine) return;
+
+      const currentStatus = fine.status || 'Pendente';
+      const newStatus = currentStatus === 'Pendente' ? 'Pago' : 'Pendente';
+
+      try {
+        const { error } = await supabaseClient
+          .from('fines')
+          .update({ status: newStatus })
+          .eq('id', fineId);
+
+        if (error) throw error;
+
+        fine.status = newStatus;
+        renderFinesList();
+      } catch (err) {
+        console.error('Erro ao atualizar status da multa:', err);
+        alert('Erro ao atualizar o status da multa no Supabase.');
       }
     }
 
@@ -789,7 +879,7 @@
               </span>
             </div>
             <div class="absolute inset-0 bg-orange-600/0 group-hover:bg-orange-600/5 transition-colors flex items-center justify-center">
-              <span class="opacity-0 group-hover:opacity-100 bg-white/90 text-orange-600 font-bold text-xs px-3 py-1.5 rounded-lg shadow-md transition-opacity">Gerenciar / Excluir Veículo</span>
+              <span class="opacity-0 group-hover:opacity-100 bg-white/90 text-orange-600 font-bold text-xs px-3 py-1.5 rounded-lg shadow-md transition-opacity">Gerenciar / Alterar Foto</span>
             </div>
           </div>
           <div class="p-5 flex-1 flex flex-col justify-between">
@@ -857,24 +947,37 @@
         return;
       }
 
-      container.innerHTML = filtered.map(f => `
-        <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-red-200">
-          <div>
-            <span class="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200 uppercase">${f.fine_type || f.fineType}</span>
-            <h4 class="font-semibold text-sm mt-1 text-slate-900">${f.vehicle_model || f.vehicleModel}</h4>
-            <p class="text-xs text-slate-500">${f.location} — ${f.date}</p>
-          </div>
-          <div class="flex items-center gap-4">
-            <div class="text-right">
-              <span class="text-sm font-bold text-red-600">R$ ${Number(f.value).toFixed(2)}</span>
-              <span class="block text-xs text-slate-400">Pendente</span>
-            </div>
+      container.innerHTML = filtered.map(f => {
+        const isPaid = (f.status || 'Pendente') === 'Pago';
+        return `
+          <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg border ${isPaid ? 'border-emerald-200 bg-emerald-50/20' : 'border-red-200'}">
             <div>
-              ${f.document_url || f.documentUrl ? `<a href="${f.document_url || f.documentUrl}" target="_blank" class="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg border border-red-200 hover:bg-red-100 transition-colors text-xs font-bold inline-flex items-center gap-1.5" title="Ver Documento"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg> Ver Doc</a>` : '<span class="text-xs text-slate-400">Sem doc</span>'}
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs font-bold ${isPaid ? 'text-emerald-700 bg-emerald-100 border-emerald-300' : 'text-red-600 bg-red-50 border-red-200'} px-2 py-0.5 rounded border uppercase">${f.fine_type || f.fineType}</span>
+                <!-- Botão de Alternar Status (Pendente / Pago) -->
+                <button onclick="toggleFineStatus('${f.id}')" class="px-2.5 py-0.5 rounded-full text-xs font-bold transition-colors ${isPaid ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-amber-500 hover:bg-amber-400 text-white'}">
+                  ${isPaid ? 'Status: Pago' : 'Status: Pendente'}
+                </button>
+              </div>
+              <h4 class="font-semibold text-sm mt-1 text-slate-900">${f.vehicle_model || f.vehicleModel}</h4>
+              <p class="text-xs text-slate-500">${f.location} — ${f.date}</p>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="text-right">
+                <span class="text-sm font-bold ${isPaid ? 'text-emerald-600' : 'text-red-600'}">R$ ${Number(f.value).toFixed(2)}</span>
+                <span class="block text-xs ${isPaid ? 'text-emerald-600 font-semibold' : 'text-slate-400'}">${f.status || 'Pendente'}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                ${f.document_url || f.documentUrl ? `<a href="${f.document_url || f.documentUrl}" target="_blank" class="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg border border-red-200 hover:bg-red-100 transition-colors text-xs font-bold inline-flex items-center gap-1.5" title="Ver Documento"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg> Doc</a>` : ''}
+                <!-- Botão de Excluir Multa -->
+                <button onclick="deleteFine('${f.id}')" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-200 transition-colors" title="Excluir Multa">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     async function handleRefuelSubmit(e) {
@@ -939,6 +1042,7 @@
       const location = document.getElementById('fine-location').value;
       const date = document.getElementById('fine-date').value;
       const value = Number(document.getElementById('fine-value').value);
+      const status = document.getElementById('fine-status').value;
       const documentUrl = document.getElementById('fine-doc-base64').value || '';
       const btn = document.getElementById('btn-submit-fine');
 
@@ -948,6 +1052,7 @@
         location: location,
         date: date,
         value: value,
+        status: status,
         document_url: documentUrl
       };
 
@@ -965,7 +1070,7 @@
         document.getElementById('fine-doc-preview-container').classList.add('hidden');
       } catch (err) {
         console.error('Erro ao salvar multa:', err);
-        alert('Erro ao cadastrar multa no Supabase. Verifique se a coluna "date" e as demais colunas existem na tabela "fines".');
+        alert('Erro ao cadastrar multa no Supabase. Verifique se a coluna "status" existe na tabela "fines".');
       } finally {
         btn.textContent = 'Salvar Multa';
         btn.disabled = false;
