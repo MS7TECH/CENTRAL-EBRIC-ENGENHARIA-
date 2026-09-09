@@ -1,4 +1,4 @@
-<!-- CÓDIGO INTEGRADO COM SUPABASE (PAINEL GESTÃO DE FROTA) - ATUALIZADO COM DIÁRIO DE BORDO, MULTAS E ASSINATURA -->
+<!-- CÓDIGO INTEGRADO COM SUPABASE (PAINEL GESTÃO DE FROTA) - CORRIGIDO E ATUALIZADO -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -133,22 +133,19 @@
           <div class="flex justify-between items-center">
             <div>
               <h1 class="text-2xl font-bold tracking-tight text-slate-900">Controle de Chaves e Diário de Bordo</h1>
-              <p class="text-sm text-slate-500 mt-1">Registro formal de retirada e devolução de chaves. O condutor responde por infrações e avarias[cite: 7].</p>
+              <p class="text-sm text-slate-500 mt-1">Registro formal de retirada e devolução de chaves.</p>
             </div>
             <button onclick="toggleLogbookModal(true)" class="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md transition-colors">
               + Retirar Chave / Abrir Diário
             </button>
           </div>
 
-          <!-- Alerta de Normas de Uso -->
           <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl text-xs text-amber-800 space-y-1">
             <span class="font-bold block uppercase">Instruções e Normas Internas (Ebric):</span>
-            <p>• O preenchimento de todos os campos na retirada e devolução é obrigatório[cite: 7].</p>
-            <p>• O condutor declarado responde integralmente por multas de trânsito e avarias no período[cite: 7].</p>
-            <p>• Em caso de repasse a outro condutor, é obrigatório dar baixa e abrir um novo registro[cite: 7].</p>
+            <p>• O preenchimento de todos os campos na retirada e devolução é obrigatório.</p>
+            <p>• O condutor declarado responde integralmente por multas de trânsito e avarias no período.</p>
           </div>
 
-          <!-- Tabela de Diário de Bordo / Chaves -->
           <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <table class="w-full text-left border-collapse">
               <thead>
@@ -157,7 +154,7 @@
                   <th class="p-4 font-semibold">Condutor</th>
                   <th class="p-4 font-semibold">Retirada (KM)</th>
                   <th class="p-4 font-semibold">Devolução (KM)</th>
-                  <th class="p-4 font-semibold">Multa Anexada?</th>
+                  <th class="p-4 font-semibold">Multa/Doc Anexado</th>
                   <th class="p-4 font-semibold">Assinatura</th>
                   <th class="p-4 font-semibold">Status Chave</th>
                   <th class="p-4 font-semibold text-center">Ações</th>
@@ -182,7 +179,6 @@
             </button>
           </div>
 
-          <!-- Filtro de Mês -->
           <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm flex items-center gap-4">
             <label class="text-xs font-semibold text-slate-600 uppercase">Filtrar por Mês:</label>
             <select id="filter-month" onchange="renderRefuelTable()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-800 focus:outline-none focus:border-orange-500">
@@ -193,7 +189,6 @@
             </select>
           </div>
 
-          <!-- Tabela de Abastecimentos -->
           <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <table class="w-full text-left border-collapse">
               <thead>
@@ -226,7 +221,6 @@
             </button>
           </div>
 
-          <!-- Filtro por Veículo nas Multas -->
           <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm flex items-center gap-4">
             <label class="text-xs font-semibold text-slate-600 uppercase">Filtrar por Veículo:</label>
             <select id="filter-fine-vehicle" onchange="renderFinesList()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-800 focus:outline-none focus:border-orange-500">
@@ -234,7 +228,6 @@
             </select>
           </div>
 
-          <!-- Lista de Multas -->
           <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
             <div id="fines-container" class="space-y-4">
               <!-- Injetado via JS -->
@@ -291,7 +284,6 @@
             </button>
           </div>
 
-          <!-- Tabela de Usuários -->
           <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <table class="w-full text-left border-collapse">
               <thead>
@@ -317,7 +309,7 @@
   <div id="logbook-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
     <div class="bg-white border border-slate-200 rounded-xl p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
       <h3 class="text-lg font-bold text-slate-900 mb-2">Retirada de Chave / Diário de Bordo</h3>
-      <p class="text-xs text-slate-500 mb-4">O condutor declara assumir responsabilidade por multas e avarias[cite: 7].</p>
+      <p class="text-xs text-slate-500 mb-4">O condutor declara assumir responsabilidade por multas e avarias.</p>
       
       <form onsubmit="handleLogbookSubmit(event)" class="space-y-4">
         <div>
@@ -337,7 +329,6 @@
           <input type="number" id="log-mileage-out" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500" placeholder="Ex: 142500" />
         </div>
 
-        <!-- CAMPO DE ANEXAR MULTA -->
         <div>
           <label class="block text-xs font-medium text-slate-600 mb-1">Anexar Multa / Ocorrência (Opcional - PDF ou Imagem)</label>
           <input type="file" id="log-fine-file" accept="image/*,application/pdf" onchange="handleLogFinePreview(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-orange-600 file:text-white hover:file:bg-orange-500 cursor-pointer bg-slate-50 border border-slate-200 rounded-lg" />
@@ -347,7 +338,6 @@
           </div>
         </div>
 
-        <!-- CAMPO DE ASSINATURA DIGITAL (CANVAS) -->
         <div>
           <div class="flex justify-between items-center mb-1">
             <label class="block text-xs font-medium text-slate-600">Assinatura do Condutor (Desenhe abaixo)</label>
@@ -379,11 +369,24 @@
     </div>
   </div>
 
+  <!-- MODAL DE VISUALIZAÇÃO DE DOCUMENTO / ANEXO (NOVO) -->
+  <div id="view-document-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white border border-slate-200 rounded-xl p-6 max-w-2xl w-full shadow-2xl text-center max-h-[90vh] flex flex-col">
+      <h3 class="text-lg font-bold text-slate-900 mb-3">Visualizador de Documento Anexado</h3>
+      <div class="bg-slate-50 border border-slate-200 rounded-lg p-2 mb-4 flex-1 flex items-center justify-center overflow-auto min-h-[300px]">
+        <div id="document-viewer-content" class="w-full h-full flex items-center justify-center">
+          <!-- Renderizado dinamicamente (Img ou iframe para PDF) -->
+        </div>
+      </div>
+      <button onclick="closeDocumentModal()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2 rounded-lg text-sm transition-colors">Fechar</button>
+    </div>
+  </div>
+
   <!-- MODAL DE DEVOLUÇÃO DE CHAVE -->
   <div id="return-log-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
     <div class="bg-white border border-slate-200 rounded-xl p-6 max-w-md w-full shadow-2xl">
       <h3 class="text-lg font-bold text-slate-900 mb-2">Devolução de Chave / Baixa de Diário</h3>
-      <p class="text-xs text-slate-500 mb-4">Insira a quilometragem final para encerrar o ciclo do condutor[cite: 7].</p>
+      <p class="text-xs text-slate-500 mb-4">Insira a quilometragem final para encerrar o ciclo do condutor.</p>
       <form onsubmit="handleReturnLogSubmit(event)" class="space-y-4">
         <input type="hidden" id="return-log-id" value="" />
         <div>
@@ -398,7 +401,7 @@
     </div>
   </div>
 
-  <!-- MODAL DE DETALHES DO VEÍCULO (COM OPÇÃO DE EXCLUIR) -->
+  <!-- MODAL DE DETALHES DO VEÍCULO -->
   <div id="vehicle-details-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
     <div class="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <div class="relative h-64 bg-slate-900 shrink-0">
@@ -605,7 +608,6 @@
     let logbooks = [];
     let currentVehicleId = null;
 
-    // Configuração do Canvas de Assinatura
     let canvas, ctx, isDrawing = false;
 
     function initSignaturePad() {
@@ -613,7 +615,6 @@
       if (!canvas) return;
       ctx = canvas.getContext('2d');
       
-      // Ajustar tamanho real do canvas
       canvas.width = canvas.offsetWidth;
       canvas.height = canvas.offsetHeight;
 
@@ -621,13 +622,11 @@
       ctx.lineWidth = 2;
       ctx.lineCap = 'round';
 
-      // Eventos de Mouse
       canvas.onmousedown = startDrawing;
       canvas.onmousemove = draw;
       canvas.onmouseup = stopDrawing;
       canvas.onmouseleave = stopDrawing;
 
-      // Eventos de Touch (Celular / Tablet)
       canvas.ontouchstart = (e) => {
         e.preventDefault();
         const touch = e.touches[0];
@@ -683,7 +682,6 @@
       document.getElementById('log-signature-base64').value = '';
     }
 
-    // Carregar dados iniciais do Supabase ao iniciar a página
     async function loadData() {
       try {
         const [vRes, uRes, rRes, fRes, lRes] = await Promise.all([
@@ -793,7 +791,6 @@
         modal.classList.remove('hidden');
         modal.classList.add('flex');
 
-        // Inicializar canvas após abrir o modal para garantir dimensões corretas
         setTimeout(initSignaturePad, 100);
       } else {
         modal.classList.remove('flex');
@@ -823,6 +820,24 @@
 
     function closeSignatureModal() {
       const modal = document.getElementById('view-signature-modal');
+      modal.classList.remove('flex');
+      modal.classList.add('hidden');
+    }
+
+    function openDocumentModal(docUrl) {
+      const container = document.getElementById('document-viewer-content');
+      if (docUrl.startsWith('data:application/pdf') || docUrl.endsWith('.pdf')) {
+        container.innerHTML = `<iframe src="${docUrl}" class="w-full h-96 border-0"></iframe>`;
+      } else {
+        container.innerHTML = `<img src="${docUrl}" alt="Documento Anexado" class="max-h-96 object-contain rounded-lg" />`;
+      }
+      const modal = document.getElementById('view-document-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeDocumentModal() {
+      const modal = document.getElementById('view-document-modal');
       modal.classList.remove('flex');
       modal.classList.add('hidden');
     }
@@ -857,7 +872,6 @@
       modal.classList.add('hidden');
     }
 
-    // ABRIR MODAL DE DETALHES DO VEÍCULO AO CLICAR NO CARD
     function openVehicleModal(vehicleId) {
       currentVehicleId = vehicleId;
       const v = vehicles.find(item => item.id === vehicleId);
@@ -877,7 +891,6 @@
       document.getElementById('modal-vehicle-id').textContent = v.id;
       document.getElementById('modal-vehicle-date').textContent = v.created_at ? new Date(v.created_at).toLocaleDateString('pt-BR') : 'Recente';
 
-      // Filtrar abastecimentos correspondentes a este veículo
       const vehicleRefuels = refuels.filter(r => {
         const refStr = (r.vehicle_model || r.vehicleModel || '').toLowerCase();
         return refStr.includes(v.plate.toLowerCase()) || refStr.includes(v.model.toLowerCase());
@@ -910,7 +923,6 @@
       currentVehicleId = null;
     }
 
-    // EXCLUIR VEÍCULO DO SUPABASE
     async function deleteCurrentVehicle() {
       if (!currentVehicleId) return;
       if (!confirm('Tem certeza que deseja excluir este veículo da frota? Esta ação não pode ser desfeita.')) return;
@@ -1110,7 +1122,7 @@
           <td class="p-4 font-mono text-slate-600">${Number(l.mileage_out).toLocaleString('pt-BR')} km <span class="block text-[10px] text-slate-400">${l.date_out}</span></td>
           <td class="p-4 font-mono text-slate-600">${l.mileage_in ? Number(l.mileage_in).toLocaleString('pt-BR') + ' km' : '—'} <span class="block text-[10px] text-slate-400">${l.date_in || 'Em andamento'}</span></td>
           <td class="p-4">
-            ${l.fine_attachment ? `<a href="${l.fine_attachment}" target="_blank" class="px-2.5 py-1 bg-red-50 text-red-600 rounded-lg text-xs font-bold border border-red-200 hover:bg-red-100 transition-colors inline-block">Ver Multa</a>` : '<span class="text-xs text-slate-400">Nenhuma</span>'}
+            ${l.fine_attachment ? `<button onclick="openDocumentModal('${l.fine_attachment}')" class="px-2.5 py-1 bg-red-50 text-red-600 rounded-lg text-xs font-bold border border-red-200 hover:bg-red-100 transition-colors inline-block">Ver Documento</button>` : '<span class="text-xs text-slate-400">Nenhum</span>'}
           </td>
           <td class="p-4">
             ${l.signature ? `<button onclick="openSignatureModal('${l.signature}')" class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold border border-slate-200 hover:bg-slate-200 transition-colors inline-block">Ver Assinatura</button>` : '<span class="text-xs text-slate-400">Sem assinatura</span>'}
@@ -1150,7 +1162,7 @@
           <td class="p-4 font-mono text-orange-600 font-bold">${Number(r.mileage).toLocaleString('pt-BR')} km</td>
           <td class="p-4 font-mono font-bold text-slate-900">R$ ${Number(r.value).toFixed(2)}</td>
           <td class="p-4 text-center">
-            ${r.receipt ? `<a href="${r.receipt}" target="_blank" class="inline-flex items-center justify-center p-1.5 bg-orange-50 text-orange-600 rounded-lg border border-orange-200 hover:bg-orange-100 transition-colors" title="Ver Nota Fiscal"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></a>` : '<span class="text-xs text-slate-400">Sem nota</span>'}
+            ${r.receipt ? `<button onclick="openDocumentModal('${r.receipt}')" class="inline-flex items-center justify-center p-1.5 bg-orange-50 text-orange-600 rounded-lg border border-orange-200 hover:bg-orange-100 transition-colors" title="Ver Nota Fiscal"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button>` : '<span class="text-xs text-slate-400">Sem nota</span>'}
           </td>
         </tr>
       `).join('');
@@ -1183,7 +1195,7 @@
               <span class="block text-xs text-slate-400">Pendente</span>
             </div>
             <div>
-              ${f.document_url || f.documentUrl ? `<a href="${f.document_url || f.documentUrl}" target="_blank" class="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg border border-red-200 hover:bg-red-100 transition-colors text-xs font-bold inline-flex items-center gap-1.5" title="Ver Documento"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg> Ver Doc</a>` : '<span class="text-xs text-slate-400">Sem doc</span>'}
+              ${f.document_url || f.documentUrl ? `<button onclick="openDocumentModal('${f.document_url || f.documentUrl}')" class="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg border border-red-200 hover:bg-red-100 transition-colors text-xs font-bold inline-flex items-center gap-1.5" title="Ver Documento"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg> Ver Doc</button>` : '<span class="text-xs text-slate-400">Sem doc</span>'}
             </div>
           </div>
         </div>
@@ -1235,7 +1247,7 @@
         clearSignature();
       } catch (err) {
         console.error('Erro ao registrar chave:', err);
-        alert('Erro ao registrar retirada de chave no Supabase. Verifique se a tabela "logbooks" possui as colunas fine_attachment e signature.');
+        alert('Erro ao registrar retirada no Supabase. Verifique se a estrutura da tabela logbooks está completa.');
       } finally {
         btn.textContent = 'Retirar Chave';
         btn.disabled = false;
@@ -1281,7 +1293,7 @@
       const station = document.getElementById('ref-station').value;
       const mileage = Number(document.getElementById('ref-mileage').value);
       const value = Number(document.getElementById('ref-value').value);
-      const receipt = document.getElementById('ref-receipt-base64').value || 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80';
+      const receipt = document.getElementById('ref-receipt-base64').value || '';
       const btn = document.getElementById('btn-submit-refuel');
       
       let userName = userFullStr;
@@ -1414,7 +1426,6 @@
       }
     }
 
-    // Inicialização ao carregar a página
     window.onload = loadData;
   </script>
 </body>
