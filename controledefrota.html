@@ -1,4 +1,4 @@
-<!-- CÓDIGO INTEGRADO COM SUPABASE (PAINEL GESTÃO DE FROTA) - ATUALIZADO COM ALTERAÇÃO DE FOTO, EXCLUSÃO E STATUS DE MULTAS -->
+<!-- CÓDIGO INTEGRADO COM SUPABASE (PAINEL GESTÃO DE FROTA) - ATUALIZADO COM DIÁRIO DE BORDO E CHAVES -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -46,6 +46,10 @@
           <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all bg-white text-orange-600 shadow-md">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
             Dashboard Frota
+          </button>
+          <button onclick="switchTab('logbook')" id="nav-logbook" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-orange-100 hover:bg-orange-700 hover:text-white">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+            Chaves / Diário de Bordo
           </button>
           <button onclick="switchTab('refueling')" id="nav-refueling" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-orange-100 hover:bg-orange-700 hover:text-white">
             <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 22v-20a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v20"/><path d="M15 6h2a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V8a6 6 0 0 0-6-6h-2"/><path d="M7 8h4"/><path d="M7 12h4"/></svg>
@@ -110,7 +114,7 @@
           <div class="flex justify-between items-center">
             <div>
               <h1 class="text-2xl font-bold tracking-tight text-slate-900">Veículos Disponíveis</h1>
-              <p class="text-sm text-slate-500 mt-1">Frota ativa pronta para alocação em canteiro de obras. Clique no card de qualquer veículo para gerenciar, alterar foto ou excluí-lo.</p>
+              <p class="text-sm text-slate-500 mt-1">Frota ativa pronta para alocação em canteiro de obras. Clique no card de qualquer veículo para ver detalhes ou excluí-lo.</p>
             </div>
             <div class="bg-white border border-slate-200 px-4 py-2 rounded-xl text-right shadow-sm">
               <span class="text-[10px] uppercase tracking-wider text-slate-400 block font-bold">Disponíveis</span>
@@ -121,6 +125,46 @@
           <!-- Grid Estilo Concessionária -->
           <div id="vehicles-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <!-- Injetado via JS -->
+          </div>
+        </div>
+
+        <!-- TAB: CHAVES / DIÁRIO DE BORDO -->
+        <div id="tab-logbook" class="hidden space-y-6">
+          <div class="flex justify-between items-center">
+            <div>
+              <h1 class="text-2xl font-bold tracking-tight text-slate-900">Controle de Chaves e Diário de Bordo</h1>
+              <p class="text-sm text-slate-500 mt-1">Registro formal de retirada e devolução de chaves. O condutor responde por infrações e avarias[cite: 4].</p>
+            </div>
+            <button onclick="toggleLogbookModal(true)" class="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md transition-colors">
+              + Retirar Chave / Abrir Diário
+            </button>
+          </div>
+
+          <!-- Alerta de Normas de Uso -->
+          <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl text-xs text-amber-800 space-y-1">
+            <span class="font-bold block uppercase">Instruções e Normas Internas (Ebric):</span>
+            <p>• O preenchimento de todos os campos na retirada e devolução é obrigatório[cite: 4].</p>
+            <p>• O condutor declarado responde integralmente por multas de trânsito e avarias no período[cite: 4].</p>
+            <p>• Em caso de repasse a outro condutor, é obrigatório dar baixa e abrir um novo registro[cite: 4].</p>
+          </div>
+
+          <!-- Tabela de Diário de Bordo / Chaves -->
+          <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase tracking-wider">
+                  <th class="p-4 font-semibold">Veículo</th>
+                  <th class="p-4 font-semibold">Condutor</th>
+                  <th class="p-4 font-semibold">Retirada (KM)</th>
+                  <th class="p-4 font-semibold">Devolução (KM)</th>
+                  <th class="p-4 font-semibold">Status Chave</th>
+                  <th class="p-4 font-semibold text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="logbook-table-body" class="divide-y divide-slate-100 text-sm text-slate-700">
+                <!-- Injetado via JS -->
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -173,7 +217,7 @@
           <div class="flex justify-between items-center">
             <div>
               <h1 class="text-2xl font-bold tracking-tight text-slate-900">Central de Multas e Infrações</h1>
-              <p class="text-sm text-slate-500 mt-1">Gerencie multas registradas, altere status entre Pendente e Pago, exclua registros e visualize documentos.</p>
+              <p class="text-sm text-slate-500 mt-1">Gerencie multas registradas, visualize os documentos anexados e filtre por veículo específico.</p>
             </div>
             <button onclick="toggleFineModal(true)" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md transition-colors">
               + Cadastrar Multa
@@ -267,20 +311,61 @@
     </main>
   </div>
 
-  <!-- MODAL DE DETALHES DO VEÍCULO (COM ALTERAÇÃO DE FOTO E EXCLUSÃO) -->
+  <!-- MODAL DE RETIRADA DE CHAVE / DIÁRIO DE BORDO -->
+  <div id="logbook-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white border border-slate-200 rounded-xl p-6 max-w-md w-full shadow-2xl">
+      <h3 class="text-lg font-bold text-slate-900 mb-2">Retirada de Chave / Diário de Bordo</h3>
+      <p class="text-xs text-slate-500 mb-4">O condutor declara assumir responsabilidade por multas e avarias[cite: 4].</p>
+      <form onsubmit="handleLogbookSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Selecione o Veículo</label>
+          <select id="log-vehicle" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500">
+            <!-- Injetado via JS -->
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Condutor Responsável</label>
+          <select id="log-user" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500">
+            <!-- Injetado via JS -->
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">KM de Retirada (Saída)</label>
+          <input type="number" id="log-mileage-out" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500" placeholder="Ex: 142500" />
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="toggleLogbookModal(false)" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-lg text-sm transition-colors">Cancelar</button>
+          <button type="submit" id="btn-submit-log" class="w-1/2 bg-orange-600 hover:bg-orange-500 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors shadow-md">Retirar Chave</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DE DEVOLUÇÃO DE CHAVE -->
+  <div id="return-log-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white border border-slate-200 rounded-xl p-6 max-w-md w-full shadow-2xl">
+      <h3 class="text-lg font-bold text-slate-900 mb-2">Devolução de Chave / Baixa de Diário</h3>
+      <p class="text-xs text-slate-500 mb-4">Insira a quilometragem final para encerrar o ciclo do condutor[cite: 4].</p>
+      <form onsubmit="handleReturnLogSubmit(event)" class="space-y-4">
+        <input type="hidden" id="return-log-id" value="" />
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">KM de Devolução (Chegada)</label>
+          <input type="number" id="log-mileage-in" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500" placeholder="Ex: 142650" />
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="closeReturnModal()" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-lg text-sm transition-colors">Cancelar</button>
+          <button type="submit" id="btn-submit-return" class="w-1/2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors shadow-md">Confirmar Devolução</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DE DETALHES DO VEÍCULO (COM OPÇÃO DE EXCLUIR) -->
   <div id="vehicle-details-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
     <div class="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-      <div class="relative h-64 bg-slate-900 shrink-0 group">
+      <div class="relative h-64 bg-slate-900 shrink-0">
         <img id="modal-vehicle-img" src="" alt="Veículo" class="w-full h-full object-cover opacity-90" />
         <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
-        
-        <!-- Botão para Alterar Foto Diretamente no Card/Modal -->
-        <label class="absolute top-4 left-4 bg-slate-900/70 hover:bg-orange-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer transition-colors backdrop-blur-md flex items-center gap-1.5 border border-white/20 shadow-md">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          Alterar Foto
-          <input type="file" id="modal-change-photo-input" accept="image/*" class="hidden" onchange="handleUpdateVehiclePhoto(event)" />
-        </label>
-
         <button onclick="closeVehicleModal()" class="absolute top-4 right-4 w-9 h-9 bg-slate-900/60 hover:bg-slate-900 text-white rounded-full flex items-center justify-center transition-colors backdrop-blur-md">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
@@ -424,13 +509,6 @@
           <input type="number" step="0.01" id="fine-value" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500" placeholder="Ex: 293.47" />
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Status Inicial</label>
-          <select id="fine-status" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500">
-            <option value="Pendente" selected>Pendente</option>
-            <option value="Pago">Pago</option>
-          </select>
-        </div>
-        <div>
           <label class="block text-xs font-medium text-slate-600 mb-1">Documento / Foto da Multa (PDF ou Imagem)</label>
           <input type="file" id="fine-doc-file" accept="image/*,application/pdf" onchange="handleFineDocPreview(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-red-600 file:text-white hover:file:bg-red-500 cursor-pointer bg-slate-50 border border-slate-200 rounded-lg" />
           <input type="hidden" id="fine-doc-base64" value="" />
@@ -486,33 +564,37 @@
     let users = [];
     let refuels = [];
     let fines = [];
+    let logbooks = [];
     let currentVehicleId = null;
 
     // Carregar dados iniciais do Supabase ao iniciar a página
     async function loadData() {
       try {
-        const [vRes, uRes, rRes, fRes] = await Promise.all([
+        const [vRes, uRes, rRes, fRes, lRes] = await Promise.all([
           supabaseClient.from('vehicles').select('*'),
           supabaseClient.from('operators').select('*'),
           supabaseClient.from('refuels').select('*'),
-          supabaseClient.from('fines').select('*')
+          supabaseClient.from('fines').select('*'),
+          supabaseClient.from('logbooks').select('*')
         ]);
 
         if (vRes.data) vehicles = vRes.data;
         if (uRes.data) users = uRes.data;
         if (rRes.data) refuels = rRes.data;
         if (fRes.data) fines = fRes.data;
+        if (lRes.data) logbooks = lRes.data;
 
         renderVehicles(vehicles);
         updateVehicleSelects();
         renderFinesList();
+        renderLogbookTable();
       } catch (err) {
         console.error('Erro ao carregar dados do Supabase:', err);
       }
     }
 
     function switchTab(tabId) {
-      ['dashboard', 'refueling', 'fines', 'register', 'users'].forEach(t => {
+      ['dashboard', 'logbook', 'refueling', 'fines', 'register', 'users'].forEach(t => {
         const tabEl = document.getElementById(`tab-${t}`);
         if(tabEl) tabEl.classList.add('hidden');
         const btn = document.getElementById(`nav-${t}`);
@@ -531,11 +613,13 @@
         renderUsersTable();
       } else if(tabId === 'fines') {
         renderFinesList();
+      } else if(tabId === 'logbook') {
+        renderLogbookTable();
       }
     }
 
     function updateVehicleSelects() {
-      const selects = ['ref-vehicle', 'fine-vehicle', 'filter-fine-vehicle'];
+      const selects = ['ref-vehicle', 'fine-vehicle', 'filter-fine-vehicle', 'log-vehicle'];
       selects.forEach(id => {
         const el = document.getElementById(id);
         if(!el) return;
@@ -579,6 +663,36 @@
         modal.classList.remove('flex');
         modal.classList.add('hidden');
       }
+    }
+
+    function toggleLogbookModal(show) {
+      const modal = document.getElementById('logbook-modal');
+      if (show) {
+        const vSelect = document.getElementById('log-vehicle');
+        vSelect.innerHTML = vehicles.map(v => `<option value="${v.model} (${v.plate})">${v.model} - ${v.plate}</option>`).join('');
+        
+        const uSelect = document.getElementById('log-user');
+        uSelect.innerHTML = users.map(u => `<option value="${u.name} (${u.phone})">${u.name} — Tel: ${u.phone}</option>`).join('');
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      } else {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }
+    }
+
+    function openReturnModal(id) {
+      document.getElementById('return-log-id').value = id;
+      const modal = document.getElementById('return-log-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeReturnModal() {
+      const modal = document.getElementById('return-log-modal');
+      modal.classList.remove('flex');
+      modal.classList.add('hidden');
     }
 
     function openUserModal(id = null) {
@@ -664,41 +778,6 @@
       currentVehicleId = null;
     }
 
-    // ALTERAR FOTO DO VEÍCULO DIRETAMENTE AO CLICAR NA OPÇÃO DO CARD/MODAL
-    async function handleUpdateVehiclePhoto(event) {
-      const file = event.target.files[0];
-      if (!file || !currentVehicleId) return;
-
-      const reader = new FileReader();
-      reader.onload = async function(e) {
-        const base64Image = e.target.result;
-        try {
-          const { error } = await supabaseClient
-            .from('vehicles')
-            .update({ image_url: base64Image })
-            .eq('id', currentVehicleId);
-
-          if (error) throw error;
-
-          // Atualizar estado local
-          const vIndex = vehicles.findIndex(v => v.id === currentVehicleId);
-          if (vIndex !== -1) {
-            vehicles[vIndex].image_url = base64Image;
-          }
-
-          // Atualizar imagem no modal em tempo real
-          document.getElementById('modal-vehicle-img').src = base64Image;
-          // Re-renderizar grid da dashboard
-          renderVehicles(vehicles);
-          alert('Foto do veículo atualizada com sucesso!');
-        } catch (err) {
-          console.error('Erro ao atualizar foto do veículo:', err);
-          alert('Erro ao salvar a nova foto no Supabase.');
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-
     // EXCLUIR VEÍCULO DO SUPABASE
     async function deleteCurrentVehicle() {
       if (!currentVehicleId) return;
@@ -715,46 +794,6 @@
       } catch (err) {
         console.error('Erro ao excluir veículo:', err);
         alert('Erro ao excluir veículo no Supabase.');
-      }
-    }
-
-    // EXCLUIR MULTA DO SUPABASE
-    async function deleteFine(fineId) {
-      if (!confirm('Tem certeza que deseja excluir este registro de multa?')) return;
-
-      try {
-        const { error } = await supabaseClient.from('fines').delete().eq('id', fineId);
-        if (error) throw error;
-
-        fines = fines.filter(f => f.id !== fineId);
-        renderFinesList();
-      } catch (err) {
-        console.error('Erro ao excluir multa:', err);
-        alert('Erro ao excluir multa no Supabase.');
-      }
-    }
-
-    // ALTERAR STATUS DA MULTA (Pendente / Pago)
-    async function toggleFineStatus(fineId) {
-      const fine = fines.find(f => f.id === fineId);
-      if (!fine) return;
-
-      const currentStatus = fine.status || 'Pendente';
-      const newStatus = currentStatus === 'Pendente' ? 'Pago' : 'Pendente';
-
-      try {
-        const { error } = await supabaseClient
-          .from('fines')
-          .update({ status: newStatus })
-          .eq('id', fineId);
-
-        if (error) throw error;
-
-        fine.status = newStatus;
-        renderFinesList();
-      } catch (err) {
-        console.error('Erro ao atualizar status da multa:', err);
-        alert('Erro ao atualizar o status da multa no Supabase.');
       }
     }
 
@@ -879,7 +918,7 @@
               </span>
             </div>
             <div class="absolute inset-0 bg-orange-600/0 group-hover:bg-orange-600/5 transition-colors flex items-center justify-center">
-              <span class="opacity-0 group-hover:opacity-100 bg-white/90 text-orange-600 font-bold text-xs px-3 py-1.5 rounded-lg shadow-md transition-opacity">Gerenciar / Alterar Foto</span>
+              <span class="opacity-0 group-hover:opacity-100 bg-white/90 text-orange-600 font-bold text-xs px-3 py-1.5 rounded-lg shadow-md transition-opacity">Gerenciar / Excluir Veículo</span>
             </div>
           </div>
           <div class="p-5 flex-1 flex flex-col justify-between">
@@ -901,6 +940,34 @@
             </div>
           </div>
         </div>
+      `).join('');
+    }
+
+    function renderLogbookTable() {
+      const tbody = document.getElementById('logbook-table-body');
+      if (logbooks.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400 text-sm">Nenhum registro de chave / diário de bordo ativo.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = logbooks.map(l => `
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="p-4 font-semibold text-slate-900">${l.vehicle_model}</td>
+          <td class="p-4 text-slate-700">
+            <span class="font-medium text-slate-900 block">${l.user_name}</span>
+            <span class="text-xs text-orange-600 font-mono">${l.user_phone}</span>
+          </td>
+          <td class="p-4 font-mono text-slate-600">${Number(l.mileage_out).toLocaleString('pt-BR')} km <span class="block text-[10px] text-slate-400">${l.date_out}</span></td>
+          <td class="p-4 font-mono text-slate-600">${l.mileage_in ? Number(l.mileage_in).toLocaleString('pt-BR') + ' km' : '—'} <span class="block text-[10px] text-slate-400">${l.date_in || 'Em andamento'}</span></td>
+          <td class="p-4">
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase ${l.status === 'active' ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}">
+              ${l.status === 'active' ? 'Chave Retirada' : 'Devolvida / Baixa'}
+            </span>
+          </td>
+          <td class="p-4 text-center">
+            ${l.status === 'active' ? `<button onclick="openReturnModal('${l.id}')" class="px-3 py-1.5 bg-orange-600 text-white rounded-lg text-xs font-semibold hover:bg-orange-500 transition-colors shadow-sm">Devolver Chave</button>` : '<span class="text-xs text-slate-400">Encerrado</span>'}
+          </td>
+        </tr>
       `).join('');
     }
 
@@ -947,37 +1014,102 @@
         return;
       }
 
-      container.innerHTML = filtered.map(f => {
-        const isPaid = (f.status || 'Pendente') === 'Pago';
-        return `
-          <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg border ${isPaid ? 'border-emerald-200 bg-emerald-50/20' : 'border-red-200'}">
-            <div>
-              <div class="flex items-center gap-2 mb-1">
-                <span class="text-xs font-bold ${isPaid ? 'text-emerald-700 bg-emerald-100 border-emerald-300' : 'text-red-600 bg-red-50 border-red-200'} px-2 py-0.5 rounded border uppercase">${f.fine_type || f.fineType}</span>
-                <!-- Botão de Alternar Status (Pendente / Pago) -->
-                <button onclick="toggleFineStatus('${f.id}')" class="px-2.5 py-0.5 rounded-full text-xs font-bold transition-colors ${isPaid ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-amber-500 hover:bg-amber-400 text-white'}">
-                  ${isPaid ? 'Status: Pago' : 'Status: Pendente'}
-                </button>
-              </div>
-              <h4 class="font-semibold text-sm mt-1 text-slate-900">${f.vehicle_model || f.vehicleModel}</h4>
-              <p class="text-xs text-slate-500">${f.location} — ${f.date}</p>
+      container.innerHTML = filtered.map(f => `
+        <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-red-200">
+          <div>
+            <span class="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200 uppercase">${f.fine_type || f.fineType}</span>
+            <h4 class="font-semibold text-sm mt-1 text-slate-900">${f.vehicle_model || f.vehicleModel}</h4>
+            <p class="text-xs text-slate-500">${f.location} — ${f.date}</p>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="text-right">
+              <span class="text-sm font-bold text-red-600">R$ ${Number(f.value).toFixed(2)}</span>
+              <span class="block text-xs text-slate-400">Pendente</span>
             </div>
-            <div class="flex items-center gap-4">
-              <div class="text-right">
-                <span class="text-sm font-bold ${isPaid ? 'text-emerald-600' : 'text-red-600'}">R$ ${Number(f.value).toFixed(2)}</span>
-                <span class="block text-xs ${isPaid ? 'text-emerald-600 font-semibold' : 'text-slate-400'}">${f.status || 'Pendente'}</span>
-              </div>
-              <div class="flex items-center gap-2">
-                ${f.document_url || f.documentUrl ? `<a href="${f.document_url || f.documentUrl}" target="_blank" class="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg border border-red-200 hover:bg-red-100 transition-colors text-xs font-bold inline-flex items-center gap-1.5" title="Ver Documento"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg> Doc</a>` : ''}
-                <!-- Botão de Excluir Multa -->
-                <button onclick="deleteFine('${f.id}')" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-200 transition-colors" title="Excluir Multa">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                </button>
-              </div>
+            <div>
+              ${f.document_url || f.documentUrl ? `<a href="${f.document_url || f.documentUrl}" target="_blank" class="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg border border-red-200 hover:bg-red-100 transition-colors text-xs font-bold inline-flex items-center gap-1.5" title="Ver Documento"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg> Ver Doc</a>` : '<span class="text-xs text-slate-400">Sem doc</span>'}
             </div>
           </div>
-        `;
-      }).join('');
+        </div>
+      `).join('');
+    }
+
+    async function handleLogbookSubmit(e) {
+      e.preventDefault();
+      const vehicleModel = document.getElementById('log-vehicle').value;
+      const userFullStr = document.getElementById('log-user').value;
+      const mileageOut = Number(document.getElementById('log-mileage-out').value);
+      const btn = document.getElementById('btn-submit-log');
+
+      let userName = userFullStr;
+      let userPhone = '';
+      const match = userFullStr.match(/^(.*?)\s*\((.*?)\)$/);
+      if (match) {
+        userName = match[1].trim();
+        userPhone = match[2].trim();
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+
+      const newRecord = {
+        vehicle_model: vehicleModel,
+        user_name: userName,
+        user_phone: userPhone,
+        mileage_out: mileageOut,
+        date_out: today,
+        status: 'active'
+      };
+
+      btn.textContent = 'Registrando...';
+      btn.disabled = true;
+
+      try {
+        const { data, error } = await supabaseClient.from('logbooks').insert([newRecord]).select();
+        if (error) throw error;
+        if (data) logbooks.push(data[0]);
+
+        toggleLogbookModal(false);
+        renderLogbookTable();
+        e.target.reset();
+      } catch (err) {
+        console.error('Erro ao registrar chave:', err);
+        alert('Erro ao registrar retirada de chave no Supabase. Verifique se a tabela "logbooks" foi criada.');
+      } finally {
+        btn.textContent = 'Retirar Chave';
+        btn.disabled = false;
+      }
+    }
+
+    async function handleReturnLogSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('return-log-id').value;
+      const mileageIn = Number(document.getElementById('log-mileage-in').value);
+      const today = new Date().toISOString().split('T')[0];
+      const btn = document.getElementById('btn-submit-return');
+
+      btn.textContent = 'Baixando...';
+      btn.disabled = true;
+
+      try {
+        const { error } = await supabaseClient.from('logbooks').update({ mileage_in: mileageIn, date_in: today, status: 'closed' }).eq('id', id);
+        if (error) throw error;
+
+        const index = logbooks.findIndex(l => l.id === id);
+        if (index !== -1) {
+          logbooks[index].mileage_in = mileageIn;
+          logbooks[index].date_in = today;
+          logbooks[index].status = 'closed';
+        }
+
+        closeReturnModal();
+        renderLogbookTable();
+      } catch (err) {
+        console.error('Erro ao dar baixa na chave:', err);
+        alert('Erro ao registrar devolução.');
+      } finally {
+        btn.textContent = 'Confirmar Devolução';
+        btn.disabled = false;
+      }
     }
 
     async function handleRefuelSubmit(e) {
@@ -1042,7 +1174,6 @@
       const location = document.getElementById('fine-location').value;
       const date = document.getElementById('fine-date').value;
       const value = Number(document.getElementById('fine-value').value);
-      const status = document.getElementById('fine-status').value;
       const documentUrl = document.getElementById('fine-doc-base64').value || '';
       const btn = document.getElementById('btn-submit-fine');
 
@@ -1052,7 +1183,6 @@
         location: location,
         date: date,
         value: value,
-        status: status,
         document_url: documentUrl
       };
 
@@ -1070,7 +1200,7 @@
         document.getElementById('fine-doc-preview-container').classList.add('hidden');
       } catch (err) {
         console.error('Erro ao salvar multa:', err);
-        alert('Erro ao cadastrar multa no Supabase. Verifique se a coluna "status" existe na tabela "fines".');
+        alert('Erro ao cadastrar multa no Supabase.');
       } finally {
         btn.textContent = 'Salvar Multa';
         btn.disabled = false;
