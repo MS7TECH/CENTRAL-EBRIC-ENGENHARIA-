@@ -1,4 +1,4 @@
-<!-- CÓDIGO INTEGRADO COM SUPABASE (PAINEL GESTÃO DE FROTA) - ATUALIZADO COM DIÁRIO DE BORDO E CHAVES -->
+<!-- CÓDIGO INTEGRADO COM SUPABASE (PAINEL GESTÃO DE FROTA) - ATUALIZADO COM DIÁRIO DE BORDO, MULTAS E ASSINATURA -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -81,7 +81,7 @@
 
     <!-- Main Content Area -->
     <main class="flex-1 flex flex-col min-w-0 overflow-y-auto bg-slate-100">
-      <header class="h-16 border-b border-slate-200 px-8 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
+      <header class="h-16 border-b border-slate-200 px-8 flex items-center justify-between bg-white/85 backdrop-blur-md sticky top-0 z-10 shadow-sm">
         <div class="flex items-center gap-4 w-96">
           <div class="relative w-full">
             <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -133,7 +133,7 @@
           <div class="flex justify-between items-center">
             <div>
               <h1 class="text-2xl font-bold tracking-tight text-slate-900">Controle de Chaves e Diário de Bordo</h1>
-              <p class="text-sm text-slate-500 mt-1">Registro formal de retirada e devolução de chaves. O condutor responde por infrações e avarias[cite: 4].</p>
+              <p class="text-sm text-slate-500 mt-1">Registro formal de retirada e devolução de chaves. O condutor responde por infrações e avarias[cite: 7].</p>
             </div>
             <button onclick="toggleLogbookModal(true)" class="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md transition-colors">
               + Retirar Chave / Abrir Diário
@@ -143,9 +143,9 @@
           <!-- Alerta de Normas de Uso -->
           <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl text-xs text-amber-800 space-y-1">
             <span class="font-bold block uppercase">Instruções e Normas Internas (Ebric):</span>
-            <p>• O preenchimento de todos os campos na retirada e devolução é obrigatório[cite: 4].</p>
-            <p>• O condutor declarado responde integralmente por multas de trânsito e avarias no período[cite: 4].</p>
-            <p>• Em caso de repasse a outro condutor, é obrigatório dar baixa e abrir um novo registro[cite: 4].</p>
+            <p>• O preenchimento de todos os campos na retirada e devolução é obrigatório[cite: 7].</p>
+            <p>• O condutor declarado responde integralmente por multas de trânsito e avarias no período[cite: 7].</p>
+            <p>• Em caso de repasse a outro condutor, é obrigatório dar baixa e abrir um novo registro[cite: 7].</p>
           </div>
 
           <!-- Tabela de Diário de Bordo / Chaves -->
@@ -157,6 +157,8 @@
                   <th class="p-4 font-semibold">Condutor</th>
                   <th class="p-4 font-semibold">Retirada (KM)</th>
                   <th class="p-4 font-semibold">Devolução (KM)</th>
+                  <th class="p-4 font-semibold">Multa Anexada?</th>
+                  <th class="p-4 font-semibold">Assinatura</th>
                   <th class="p-4 font-semibold">Status Chave</th>
                   <th class="p-4 font-semibold text-center">Ações</th>
                 </tr>
@@ -313,9 +315,10 @@
 
   <!-- MODAL DE RETIRADA DE CHAVE / DIÁRIO DE BORDO -->
   <div id="logbook-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-    <div class="bg-white border border-slate-200 rounded-xl p-6 max-w-md w-full shadow-2xl">
+    <div class="bg-white border border-slate-200 rounded-xl p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
       <h3 class="text-lg font-bold text-slate-900 mb-2">Retirada de Chave / Diário de Bordo</h3>
-      <p class="text-xs text-slate-500 mb-4">O condutor declara assumir responsabilidade por multas e avarias[cite: 4].</p>
+      <p class="text-xs text-slate-500 mb-4">O condutor declara assumir responsabilidade por multas e avarias[cite: 7].</p>
+      
       <form onsubmit="handleLogbookSubmit(event)" class="space-y-4">
         <div>
           <label class="block text-xs font-medium text-slate-600 mb-1">Selecione o Veículo</label>
@@ -333,6 +336,30 @@
           <label class="block text-xs font-medium text-slate-600 mb-1">KM de Retirada (Saída)</label>
           <input type="number" id="log-mileage-out" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-500" placeholder="Ex: 142500" />
         </div>
+
+        <!-- CAMPO DE ANEXAR MULTA -->
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Anexar Multa / Ocorrência (Opcional - PDF ou Imagem)</label>
+          <input type="file" id="log-fine-file" accept="image/*,application/pdf" onchange="handleLogFinePreview(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-orange-600 file:text-white hover:file:bg-orange-500 cursor-pointer bg-slate-50 border border-slate-200 rounded-lg" />
+          <input type="hidden" id="log-fine-base64" value="" />
+          <div id="log-fine-preview-container" class="mt-2 hidden">
+            <img id="log-fine-preview" src="" alt="Multa Anexada" class="w-full h-24 object-cover rounded-lg border border-slate-200" />
+          </div>
+        </div>
+
+        <!-- CAMPO DE ASSINATURA DIGITAL (CANVAS) -->
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="block text-xs font-medium text-slate-600">Assinatura do Condutor (Desenhe abaixo)</label>
+            <button type="button" onclick="clearSignature()" class="text-[11px] text-red-600 hover:underline font-semibold">Limpar Assinatura</button>
+          </div>
+          <div class="border border-slate-300 rounded-lg bg-slate-50 overflow-hidden relative">
+            <canvas id="signature-pad" class="w-full h-36 cursor-crosshair touch-none bg-white"></canvas>
+            <input type="hidden" id="log-signature-base64" value="" />
+          </div>
+          <span class="text-[10px] text-slate-400 mt-1 block">Assine utilizando o mouse, dedo ou caneta stylus.</span>
+        </div>
+
         <div class="flex gap-3 pt-2">
           <button type="button" onclick="toggleLogbookModal(false)" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-lg text-sm transition-colors">Cancelar</button>
           <button type="submit" id="btn-submit-log" class="w-1/2 bg-orange-600 hover:bg-orange-500 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors shadow-md">Retirar Chave</button>
@@ -341,11 +368,22 @@
     </div>
   </div>
 
+  <!-- MODAL DE VISUALIZAÇÃO DE ASSINATURA -->
+  <div id="view-signature-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white border border-slate-200 rounded-xl p-6 max-w-sm w-full shadow-2xl text-center">
+      <h3 class="text-lg font-bold text-slate-900 mb-3">Assinatura do Condutor</h3>
+      <div class="bg-slate-50 border border-slate-200 rounded-lg p-2 mb-4 flex items-center justify-center">
+        <img id="view-signature-img" src="" alt="Assinatura Digital" class="max-h-40 object-contain" />
+      </div>
+      <button onclick="closeSignatureModal()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2 rounded-lg text-sm transition-colors">Fechar</button>
+    </div>
+  </div>
+
   <!-- MODAL DE DEVOLUÇÃO DE CHAVE -->
   <div id="return-log-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
     <div class="bg-white border border-slate-200 rounded-xl p-6 max-w-md w-full shadow-2xl">
       <h3 class="text-lg font-bold text-slate-900 mb-2">Devolução de Chave / Baixa de Diário</h3>
-      <p class="text-xs text-slate-500 mb-4">Insira a quilometragem final para encerrar o ciclo do condutor[cite: 4].</p>
+      <p class="text-xs text-slate-500 mb-4">Insira a quilometragem final para encerrar o ciclo do condutor[cite: 7].</p>
       <form onsubmit="handleReturnLogSubmit(event)" class="space-y-4">
         <input type="hidden" id="return-log-id" value="" />
         <div>
@@ -567,6 +605,84 @@
     let logbooks = [];
     let currentVehicleId = null;
 
+    // Configuração do Canvas de Assinatura
+    let canvas, ctx, isDrawing = false;
+
+    function initSignaturePad() {
+      canvas = document.getElementById('signature-pad');
+      if (!canvas) return;
+      ctx = canvas.getContext('2d');
+      
+      // Ajustar tamanho real do canvas
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+
+      // Eventos de Mouse
+      canvas.onmousedown = startDrawing;
+      canvas.onmousemove = draw;
+      canvas.onmouseup = stopDrawing;
+      canvas.onmouseleave = stopDrawing;
+
+      // Eventos de Touch (Celular / Tablet)
+      canvas.ontouchstart = (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent('mousedown', {
+          clientX: touch.clientX,
+          clientY: touch.clientY
+        });
+        canvas.dispatchEvent(mouseEvent);
+      };
+
+      canvas.ontouchmove = (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent('mousemove', {
+          clientX: touch.clientX,
+          clientY: touch.clientY
+        });
+        canvas.dispatchEvent(mouseEvent);
+      };
+
+      canvas.ontouchend = (e) => {
+        e.preventDefault();
+        const mouseEvent = new MouseEvent('mouseup', {});
+        canvas.dispatchEvent(mouseEvent);
+      };
+    }
+
+    function startDrawing(e) {
+      isDrawing = true;
+      const rect = canvas.getBoundingClientRect();
+      ctx.beginPath();
+      ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+      ctx.stroke();
+    }
+
+    function stopDrawing() {
+      if (!isDrawing) return;
+      isDrawing = false;
+      if (canvas) {
+        document.getElementById('log-signature-base64').value = canvas.toDataURL('image/png');
+      }
+    }
+
+    function clearSignature() {
+      if (!ctx || !canvas) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      document.getElementById('log-signature-base64').value = '';
+    }
+
     // Carregar dados iniciais do Supabase ao iniciar a página
     async function loadData() {
       try {
@@ -676,6 +792,9 @@
 
         modal.classList.remove('hidden');
         modal.classList.add('flex');
+
+        // Inicializar canvas após abrir o modal para garantir dimensões corretas
+        setTimeout(initSignaturePad, 100);
       } else {
         modal.classList.remove('flex');
         modal.classList.add('hidden');
@@ -691,6 +810,19 @@
 
     function closeReturnModal() {
       const modal = document.getElementById('return-log-modal');
+      modal.classList.remove('flex');
+      modal.classList.add('hidden');
+    }
+
+    function openSignatureModal(signatureBase64) {
+      document.getElementById('view-signature-img').src = signatureBase64;
+      const modal = document.getElementById('view-signature-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeSignatureModal() {
+      const modal = document.getElementById('view-signature-modal');
       modal.classList.remove('flex');
       modal.classList.add('hidden');
     }
@@ -896,6 +1028,24 @@
       }
     }
 
+    function handleLogFinePreview(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('log-fine-base64').value = e.target.result;
+          const preview = document.getElementById('log-fine-preview');
+          if (file.type.includes('image')) {
+            preview.src = e.target.result;
+            document.getElementById('log-fine-preview-container').classList.remove('hidden');
+          } else {
+            document.getElementById('log-fine-preview-container').classList.add('hidden');
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
     function renderVehicles(list) {
       const grid = document.getElementById('vehicles-grid');
       const availableCount = document.getElementById('available-count');
@@ -946,7 +1096,7 @@
     function renderLogbookTable() {
       const tbody = document.getElementById('logbook-table-body');
       if (logbooks.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400 text-sm">Nenhum registro de chave / diário de bordo ativo.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-slate-400 text-sm">Nenhum registro de chave / diário de bordo ativo.</td></tr>';
         return;
       }
 
@@ -959,6 +1109,12 @@
           </td>
           <td class="p-4 font-mono text-slate-600">${Number(l.mileage_out).toLocaleString('pt-BR')} km <span class="block text-[10px] text-slate-400">${l.date_out}</span></td>
           <td class="p-4 font-mono text-slate-600">${l.mileage_in ? Number(l.mileage_in).toLocaleString('pt-BR') + ' km' : '—'} <span class="block text-[10px] text-slate-400">${l.date_in || 'Em andamento'}</span></td>
+          <td class="p-4">
+            ${l.fine_attachment ? `<a href="${l.fine_attachment}" target="_blank" class="px-2.5 py-1 bg-red-50 text-red-600 rounded-lg text-xs font-bold border border-red-200 hover:bg-red-100 transition-colors inline-block">Ver Multa</a>` : '<span class="text-xs text-slate-400">Nenhuma</span>'}
+          </td>
+          <td class="p-4">
+            ${l.signature ? `<button onclick="openSignatureModal('${l.signature}')" class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold border border-slate-200 hover:bg-slate-200 transition-colors inline-block">Ver Assinatura</button>` : '<span class="text-xs text-slate-400">Sem assinatura</span>'}
+          </td>
           <td class="p-4">
             <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase ${l.status === 'active' ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}">
               ${l.status === 'active' ? 'Chave Retirada' : 'Devolvida / Baixa'}
@@ -1039,6 +1195,8 @@
       const vehicleModel = document.getElementById('log-vehicle').value;
       const userFullStr = document.getElementById('log-user').value;
       const mileageOut = Number(document.getElementById('log-mileage-out').value);
+      const fineAttachment = document.getElementById('log-fine-base64').value || '';
+      const signature = document.getElementById('log-signature-base64').value || '';
       const btn = document.getElementById('btn-submit-log');
 
       let userName = userFullStr;
@@ -1057,6 +1215,8 @@
         user_phone: userPhone,
         mileage_out: mileageOut,
         date_out: today,
+        fine_attachment: fineAttachment,
+        signature: signature,
         status: 'active'
       };
 
@@ -1071,9 +1231,11 @@
         toggleLogbookModal(false);
         renderLogbookTable();
         e.target.reset();
+        document.getElementById('log-fine-preview-container').classList.add('hidden');
+        clearSignature();
       } catch (err) {
         console.error('Erro ao registrar chave:', err);
-        alert('Erro ao registrar retirada de chave no Supabase. Verifique se a tabela "logbooks" foi criada.');
+        alert('Erro ao registrar retirada de chave no Supabase. Verifique se a tabela "logbooks" possui as colunas fine_attachment e signature.');
       } finally {
         btn.textContent = 'Retirar Chave';
         btn.disabled = false;
